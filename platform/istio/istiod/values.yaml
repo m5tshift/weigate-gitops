@@ -1,0 +1,37 @@
+# Values for the upstream istiod chart (SRS 4.1.10, INF-3.1, 6.2).
+autoscaleEnabled: false
+replicaCount: 1
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+
+# Sidecar redirection is set up by istio-cni: the injector adds istio-validation instead of istio-init.
+cni:
+  enabled: true
+
+env:
+  # The JWKS of merchant-service is fetched by the gateway Envoy over mTLS, not by istiod: istiod is outside the
+  # mesh, and mTLS STRICT rejects its plaintext requests to merchant-service.
+  PILOT_JWT_ENABLE_REMOTE_JWKS: hybrid
+
+meshConfig:
+  defaultConfig:
+    holdApplicationUntilProxyStarts: true
+  # Decoded and merged slashes before AuthorizationPolicy matches paths (no /pay%2F.. bypass).
+  pathNormalization:
+    normalization: DECODE_AND_MERGE_SLASHES
+
+global:
+  proxy:
+    # Every injected sidecar and its istio-validation init container (SRS 6.2).
+    resources:
+      requests:
+        cpu: 10m
+        memory: 48Mi
+      limits:
+        cpu: 500m
+        memory: 128Mi

@@ -1,0 +1,30 @@
+# Values for the upstream Istio gateway chart (SRS 4.1.8, 4.1.10, 6.2).
+# One replica on the minimal stand (one worker, SRS 6.4); no HPA.
+replicaCount: 1
+autoscaling:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 1000m
+    memory: 256Mi
+
+# HTTPS only (SRS 4.1.10): no port 80. HAProxy forwards TCP with PROXY protocol v2 to NodePort 30443 of the workers
+# (role lb of weigate, lb_https_nodeport). Local keeps the traffic on the node that received it; nodes without a
+# gateway pod fail the HAProxy check.
+service:
+  type: NodePort
+  externalTrafficPolicy: Local
+  ports:
+    - name: status-port
+      port: 15021
+      protocol: TCP
+      targetPort: 15021
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: 443
+      nodePort: 30443

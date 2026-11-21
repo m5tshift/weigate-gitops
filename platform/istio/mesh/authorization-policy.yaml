@@ -1,0 +1,26 @@
+# Without a JWT only POST /api/v1/auth/token, POST /api/v1/merchants and /pay/* (SRS 4.1.10). Everything else
+# under /api/v1 needs a valid token of merchant-service; requests matching no rule are denied (403).
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: merchant-jwt
+  namespace: istio-system
+spec:
+  selector:
+    matchLabels:
+      istio: gateway
+  action: ALLOW
+  rules:
+    - to:
+        - operation:
+            methods: ["POST"]
+            paths: ["/api/v1/auth/token", "/api/v1/merchants"]
+    - to:
+        - operation:
+            paths: ["/pay/*"]
+    - from:
+        - source:
+            requestPrincipals: ["weigate-merchant-service/*"]
+      to:
+        - operation:
+            paths: ["/api/v1/*"]

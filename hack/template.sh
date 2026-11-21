@@ -53,7 +53,7 @@ for values in "${values_files[@]}"; do
 
   if ! kubeconform -strict -summary "$manifest"; then report "$c: kubeconform failed"; fi
 
-  # Minimal stand (SRS 6.4): no Istio, ESO, ServiceMonitor or PDB; Secrets come from the stand script.
+  # Minimal stand (SRS 6.4): no VirtualService/DestinationRule, ESO, ServiceMonitor or PDB; Secrets come from the stand script.
   kinds=$(yq eval-all '.kind' "$manifest" | grep -v '^---$' | sort -u)
   for k in PodDisruptionBudget ExternalSecret VirtualService DestinationRule ServiceMonitor Secret Namespace; do
     if grep -qx "$k" <<<"$kinds"; then report "$c: renders $k"; fi

@@ -1,0 +1,11 @@
+# Values for the upstream Istio cni chart (SRS 4.1.10, INF-1.1a). The CNI paths are the Talos defaults.
+cniBinDir: /opt/cni/bin
+cniConfDir: /etc/cni/net.d
+chained: true
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi

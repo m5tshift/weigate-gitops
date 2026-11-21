@@ -1,0 +1,28 @@
+# Gateway API Gateway on the pods of the istio-gateway chart (manual deployment: spec.addresses names its Service).
+# One HTTPS listener, TLS terminated with the cert-manager certificate of the stand CA (SRS 4.1.10).
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: weigate
+  namespace: istio-system
+spec:
+  gatewayClassName: istio
+  addresses:
+    - type: Hostname
+      value: istio-gateway.istio-system.svc.cluster.local
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: weigate.home.arpa
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: weigate-gateway-tls
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              kubernetes.io/metadata.name: apps
