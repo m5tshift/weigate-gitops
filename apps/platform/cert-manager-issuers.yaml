@@ -1,0 +1,33 @@
+# Wave 2: stand CA (self-signed ClusterIssuer -> CA Certificate -> ClusterIssuer weigate-ca) and the gateway certificate
+# (SRS 4.1.10). The CA key is created by cert-manager in the cluster and never appears in git.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager-issuers
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: weigate
+  source:
+    repoURL: https://github.com/m5tshift/weigate-gitops
+    targetRevision: main
+    path: platform/cert-manager/issuers
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
