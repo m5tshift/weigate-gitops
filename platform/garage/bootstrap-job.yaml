@@ -1,0 +1,79 @@
+# Idempotent setup through the admin API: one-node layout, buckets, imported keys (from OpenBao), per-bucket access.
+# The garage image has no shell, so the Job runs on curl.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: garage-bootstrap
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 6
+  template:
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 100
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: bootstrap
+          image: curlimages/curl:8.9.1@sha256:8addc281f0ea517409209f76832b6ddc2cabc3264feb1ebbec2a2521ffad24e4
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              api=http://garage:3903/v1
+              auth="Authorization: Bearer $(cat /secrets/admin-token)"
+              call() { curl -sf -H "$auth" -H 'Content-Type: application/json' "$@"; }
+              until call "$api/status" > /tmp/status; do sleep 3; done
+              node=$(sed -n 's/.*"id":"\([0-9a-f]*\)".*/\1/p' /tmp/status | head -n1)
+              if ! call "$api/layout" | grep -q '"roles":\[{'; then
+                call -X POST "$api/layout" -d "[{\"id\":\"$node\",\"zone\":\"dc1\",\"capacity\":10000000000,\"tags\":[]}]" > /dev/null
+                call -X POST "$api/layout/apply" -d '{"version":1}' > /dev/null
+              fi
+              for b in pg-backups mongo-backups tempo-traces; do
+                if ! call "$api/bucket?globalAlias=$b" > /tmp/bucket; then
+                  call -X POST "$api/bucket" -d "{\"globalAlias\":\"$b\"}" > /tmp/bucket
+                fi
+                bid=$(sed -n 's/^{"id":"\([0-9a-f]*\)".*/\1/p' /tmp/bucket)
+                ak=$(cat "/keys/$b-access-key")
+                if ! call "$api/key?id=$ak" > /dev/null; then
+                  call -X POST "$api/key/import" -d "{\"name\":\"$b\",\"accessKeyId\":\"$ak\",\"secretAccessKey\":\"$(cat "/keys/$b-secret-key")\"}" > /dev/null
+                fi
+                call -X POST "$api/bucket/allow" \
+                  -d "{\"bucketId\":\"$bid\",\"accessKeyId\":\"$ak\",\"permissions\":{\"read\":true,\"write\":true,\"owner\":false}}" > /dev/null
+              done
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          volumeMounts:
+            - name: secrets
+              mountPath: /secrets
+              readOnly: true
+            - name: keys
+              mountPath: /keys
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: secrets
+          secret:
+            secretName: garage-secrets
+        - name: keys
+          secret:
+            secretName: garage-keys
+        - name: tmp
+          emptyDir:
+            sizeLimit: 1Mi
