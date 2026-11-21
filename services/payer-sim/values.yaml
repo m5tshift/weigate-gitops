@@ -2,7 +2,7 @@
 image:
   repository: ghcr.io/m5tshift/slopay/payer-sim
   # Updated by CI of slopay after the image build; not edited by hand.
-  tag: "09a576e"
+  tag: "6f2090f"
 
 # Signed transactions and nonces live in memory, so one replica; no PDB.
 replicaCount: 1

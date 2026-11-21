@@ -2,7 +2,7 @@
 image:
   repository: ghcr.io/m5tshift/slopay/rate-mock
   # Updated by CI of slopay after the image build; not edited by hand.
-  tag: "197a819"
+  tag: "6f2090f"
 
 # The command state lives in memory, so one replica; no PDB.
 replicaCount: 1
