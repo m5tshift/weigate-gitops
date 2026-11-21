@@ -1,7 +1,7 @@
-# invoice-service on the minimal stand (SRS 6.4); merged over charts/invoice-service/values.yaml of slopay.
+# invoice-service on the minimal stand (SRS 6.4); merged over charts/invoice-service/values.yaml of weigate.
 image:
-  repository: ghcr.io/m5tshift/slopay/invoice-service
-  # Updated by CI of slopay after the image build; not edited by hand.
+  repository: ghcr.io/m5tshift/weigate/invoice-service
+  # Updated by CI of weigate after the image build; not edited by hand.
   tag: "6f2090f"
 
 # SRS 6.4: one replica of every component; a PDB of one replica would block the drain of the only worker.
@@ -24,9 +24,9 @@ telemetry:
 kafka:
   enabled: true
   brokers:
-    - slopay-kafka-bootstrap.kafka.svc:9092
+    - weigate-kafka-bootstrap.kafka.svc:9092
 
-# Secrets in apps made by the stand secrets script (slopay infra/stand-secrets): invoice-service-postgres
+# Secrets in apps made by the stand secrets script (weigate infra/stand-secrets): invoice-service-postgres
 # (password of the CNPG owner invoice-service) and invoice-service-valkey (ACL user invoice-service).
 secrets:
   - name: postgres
@@ -63,7 +63,7 @@ env:
   STATUS_CACHE_TTL: 30s
   TRACKING_WINDOW: 24h
   VALKEY_TIMEOUT: 100ms
-  JWT_ISSUER: slopay-merchant-service
+  JWT_ISSUER: weigate-merchant-service
   JWKS_URL: http://merchant-service.apps.svc:8080/.well-known/jwks.json
   JWKS_TIMEOUT: 2s
   JWKS_REFRESH: 5m

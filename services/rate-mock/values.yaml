@@ -1,7 +1,7 @@
-# rate-mock on the minimal stand (SRS 6.4); merged over charts/rate-mock/values.yaml of slopay.
+# rate-mock on the minimal stand (SRS 6.4); merged over charts/rate-mock/values.yaml of weigate.
 image:
-  repository: ghcr.io/m5tshift/slopay/rate-mock
-  # Updated by CI of slopay after the image build; not edited by hand.
+  repository: ghcr.io/m5tshift/weigate/rate-mock
+  # Updated by CI of weigate after the image build; not edited by hand.
   tag: "6f2090f"
 
 # The command state lives in memory, so one replica; no PDB.

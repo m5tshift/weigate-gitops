@@ -1,4 +1,4 @@
-Closes m5tshift/slopay#
+Closes m5tshift/weigate#
 
 ## Что сделано
 

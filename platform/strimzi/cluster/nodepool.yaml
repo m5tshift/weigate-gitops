@@ -4,7 +4,7 @@ metadata:
   name: dual-role
   namespace: kafka
   labels:
-    strimzi.io/cluster: slopay
+    strimzi.io/cluster: weigate
 spec:
   replicas: 1
   roles:

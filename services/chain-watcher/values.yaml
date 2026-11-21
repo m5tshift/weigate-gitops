@@ -1,7 +1,7 @@
-# chain-watcher on the minimal stand (SRS 6.4); merged over charts/chain-watcher/values.yaml of slopay.
+# chain-watcher on the minimal stand (SRS 6.4); merged over charts/chain-watcher/values.yaml of weigate.
 image:
-  repository: ghcr.io/m5tshift/slopay/chain-watcher
-  # Updated by CI of slopay after the image build; not edited by hand.
+  repository: ghcr.io/m5tshift/weigate/chain-watcher
+  # Updated by CI of weigate after the image build; not edited by hand.
   tag: "6f2090f"
 
 # SRS 6.4: one replica of every component; a PDB of one replica would block the drain of the only worker.
@@ -27,9 +27,9 @@ telemetry:
 kafka:
   enabled: true
   brokers:
-    - slopay-kafka-bootstrap.kafka.svc:9092
+    - weigate-kafka-bootstrap.kafka.svc:9092
 
-# Secrets in apps made by the stand secrets script (slopay infra/stand-secrets): chain-watcher-mongodb
+# Secrets in apps made by the stand secrets script (weigate infra/stand-secrets): chain-watcher-mongodb
 # (the same password as mongodb-users in data) and chain-watcher-valkey (ACL user chain-watcher).
 secrets:
   - name: mongodb

@@ -1,7 +1,7 @@
-# payer-sim on the minimal stand (SRS 6.4); merged over charts/payer-sim/values.yaml of slopay.
+# payer-sim on the minimal stand (SRS 6.4); merged over charts/payer-sim/values.yaml of weigate.
 image:
-  repository: ghcr.io/m5tshift/slopay/payer-sim
-  # Updated by CI of slopay after the image build; not edited by hand.
+  repository: ghcr.io/m5tshift/weigate/payer-sim
+  # Updated by CI of weigate after the image build; not edited by hand.
   tag: "6f2090f"
 
 # Signed transactions and nonces live in memory, so one replica; no PDB.
@@ -21,7 +21,7 @@ resources:
 telemetry:
   otlpEndpoint: ""
 
-# Secret in apps made by the stand secrets script (slopay infra/stand-secrets): payer-sim-payer-keys,
+# Secret in apps made by the stand secrets script (weigate infra/stand-secrets): payer-sim-payer-keys,
 # keys of the Anvil accounts derived from the same mnemonic as anvil-mnemonic in chain.
 secrets:
   - name: payer-keys
@@ -30,7 +30,7 @@ env:
   INVOICE_SERVICE_URL: http://invoice-service.apps.svc:8080
   # Anvil in chain (SRS 6.4).
   ANVIL_RPC_URL: http://anvil.chain.svc:8545
-  PAYER_KEYS_FILE: /var/run/secrets/slopay/payer-keys/keys
+  PAYER_KEYS_FILE: /var/run/secrets/weigate/payer-keys/keys
   # Shares of invoices: paid in full, underpaid, not paid (SRS 8.1); they sum to 100.
   PAY_PERCENT: "80"
   UNDERPAY_PERCENT: "10"
