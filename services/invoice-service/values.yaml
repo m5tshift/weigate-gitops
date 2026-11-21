@@ -2,7 +2,7 @@
 image:
   repository: ghcr.io/m5tshift/slopay/invoice-service
   # Updated by CI of slopay after the image build; not edited by hand.
-  tag: "83ffc13"
+  tag: "4fa2f07"
 
 # SRS 6.4: one replica of every component; a PDB of one replica would block the drain of the only worker.
 replicaCount: 1
