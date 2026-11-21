@@ -10,14 +10,13 @@ GitOps-репозиторий Weigate: всё, что ArgoCD разворачи�
 apps/
   root.yaml              App of Apps
   platform/              Application платформенных компонентов
-  services/              Application сервисов, тестовых компонентов и holmes-bridge
+  services/              Application сервисов и тестовых компонентов
 platform/<component>/    values и манифесты: local-path-provisioner, cert-manager, istio, envoy-rls,
                          cnpg, percona-mongodb, clickhouse, valkey, garage, openbao, external-secrets,
-                         observability, holmesgpt, mailpit, arc, zot, karpenter, kwok, anvil,
+                         observability, arc, zot, karpenter, kwok, anvil,
                          network-policies
 platform/strimzi/        оператор и CR Kafka, целиком сгенерированы Ansible-ролью из weigate
-services/<component>/values.yaml   values чарта из Zot: сервисы, merchant-mock, rate-mock, payer-sim,
-                         holmes-bridge
+services/<component>/values.yaml   values чарта из Zot: сервисы, merchant-mock, rate-mock, payer-sim
 ```
 
 ## Правила
