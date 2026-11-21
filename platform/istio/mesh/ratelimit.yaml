@@ -1,0 +1,146 @@
+# Rate limits on the gateway (SRS 4.1.8): global through Envoy RLS + Valkey (limits in platform/envoy-rls) and a coarse
+# local_ratelimit. failure_mode_deny is false: when RLS or Valkey is down, requests pass. The ratelimit filter sits
+# right before the router, after jwt_authn, so the x-merchant-id header (sub claim, request-authentication.yaml)
+# is already set. A limited request gets 429 with Retry-After: the windows are 1 s to 1 min, the header holds the
+# longest one.
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: gateway-ratelimit
+  namespace: istio-system
+spec:
+  workloadSelector:
+    labels:
+      istio: gateway
+  configPatches:
+    - applyTo: HTTP_FILTER
+      match:
+        context: GATEWAY
+        listener:
+          portNumber: 443
+          filterChain:
+            filter:
+              name: envoy.filters.network.http_connection_manager
+              subFilter:
+                name: envoy.filters.http.router
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: envoy.filters.http.local_ratelimit
+          typed_config:
+            "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+            type_url: type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+            value:
+              stat_prefix: gateway_local_ratelimit
+              token_bucket:
+                max_tokens: 1000
+                tokens_per_fill: 1000
+                fill_interval: 1s
+              filter_enabled:
+                default_value: {numerator: 100, denominator: HUNDRED}
+              filter_enforced:
+                default_value: {numerator: 100, denominator: HUNDRED}
+    - applyTo: HTTP_FILTER
+      match:
+        context: GATEWAY
+        listener:
+          portNumber: 443
+          filterChain:
+            filter:
+              name: envoy.filters.network.http_connection_manager
+              subFilter:
+                name: envoy.filters.http.router
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: envoy.filters.http.ratelimit
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
+            domain: weigate
+            failure_mode_deny: false
+            timeout: 0.25s
+            transport_api_version: V3
+            rate_limit_service:
+              transport_api_version: V3
+              grpc_service:
+                envoy_grpc:
+                  cluster_name: outbound|8081||envoy-rls.istio-system.svc.cluster.local
+                  authority: envoy-rls.istio-system.svc.cluster.local
+    - applyTo: NETWORK_FILTER
+      match:
+        context: GATEWAY
+        listener:
+          portNumber: 443
+          filterChain:
+            filter:
+              name: envoy.filters.network.http_connection_manager
+      patch:
+        operation: MERGE
+        value:
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+            local_reply_config:
+              mappers:
+                - filter:
+                    status_code_filter:
+                      comparison:
+                        op: EQ
+                        value:
+                          default_value: 429
+                          runtime_key: gateway_ratelimit_status
+                  headers_to_add:
+                    - header: {key: Retry-After, value: "60"}
+    - applyTo: VIRTUAL_HOST
+      match:
+        context: GATEWAY
+        routeConfiguration:
+          portNumber: 443
+      patch:
+        operation: MERGE
+        value:
+          rate_limits:
+            - actions:
+                - header_value_match:
+                    descriptor_value: create_invoice
+                    headers:
+                      - name: ":method"
+                        string_match: {exact: POST}
+                      - name: ":path"
+                        string_match: {exact: /api/v1/invoices}
+                - request_headers: {header_name: x-merchant-id, descriptor_key: merchant}
+            - actions:
+                - header_value_match:
+                    descriptor_value: get_invoice
+                    headers:
+                      - name: ":method"
+                        string_match: {exact: GET}
+                      - name: ":path"
+                        string_match: {safe_regex: {regex: "/api/v1/invoices/[^/]+"}}
+                - request_headers: {header_name: x-merchant-id, descriptor_key: merchant}
+            - actions:
+                - header_value_match:
+                    descriptor_value: pay_status
+                    headers:
+                      - name: ":method"
+                        string_match: {exact: GET}
+                      - name: ":path"
+                        string_match: {safe_regex: {regex: "/pay/[^/]+/status"}}
+                - remote_address: {}
+            - actions:
+                - header_value_match:
+                    descriptor_value: auth_token
+                    headers:
+                      - name: ":method"
+                        string_match: {exact: POST}
+                      - name: ":path"
+                        string_match: {exact: /api/v1/auth/token}
+                - remote_address: {}
+            - actions:
+                - header_value_match:
+                    descriptor_value: register
+                    headers:
+                      - name: ":method"
+                        string_match: {exact: POST}
+                      - name: ":path"
+                        string_match: {exact: /api/v1/merchants}
+                - remote_address: {}
