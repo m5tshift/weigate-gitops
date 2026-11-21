@@ -2,7 +2,7 @@
 image:
   repository: ghcr.io/m5tshift/weigate/payer-sim
   # Updated by CI of weigate after the image build; not edited by hand.
-  tag: "6f2090f"
+  tag: "64443bb"
 
 # Signed transactions and nonces live in memory, so one replica; no PDB.
 replicaCount: 1
