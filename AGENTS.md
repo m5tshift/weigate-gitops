@@ -10,7 +10,7 @@ GitOps-репозиторий Weigate: всё, что ArgoCD разворачи�
 apps/
   root.yaml              App of Apps
   platform/              Application платформенных компонентов
-  services/              Application сервисов, и тестовых компонентов
+  services/              Application сервисов и тестовых компонентов
 platform/<component>/    values и манифесты: local-path-provisioner, cert-manager, istio, envoy-rls,
                          cnpg, percona-mongodb, clickhouse, valkey, garage, openbao, external-secrets,
                          observability, arc, zot, karpenter, kwok, anvil,
