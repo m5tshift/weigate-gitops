@@ -1,0 +1,53 @@
+# /api/v1/* is the merchant API (JWT, see authorization-policy.yaml), /pay/* the public payment page (SRS 4.1.8).
+# /.well-known/jwks.json of merchant-service is not routed: only the gateway reads it inside the mesh.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: weigate-api
+  namespace: apps
+spec:
+  parentRefs:
+    - name: weigate
+      namespace: istio-system
+      sectionName: https
+  hostnames:
+    - weigate.home.arpa
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/v1/merchants
+        - path:
+            type: PathPrefix
+            value: /api/v1/auth
+      backendRefs:
+        - name: merchant-service
+          port: 8080
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/v1/invoices
+      backendRefs:
+        - name: invoice-service
+          port: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: weigate-pay
+  namespace: apps
+spec:
+  parentRefs:
+    - name: weigate
+      namespace: istio-system
+      sectionName: https
+  hostnames:
+    - weigate.home.arpa
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /pay
+      backendRefs:
+        - name: invoice-service
+          port: 8080

@@ -48,14 +48,16 @@ services/<component>/values.yaml   values чарта из Zot: сервисы, m
 
 ## Команды
 
-Нужны `yamllint`, `kubeconform` и `yq`; те же проверки идут в CI (`.github/workflows/pr.yml`).
+Нужны `yamllint`, `kubeconform`, `yq`, `helm` и `kubectl`; те же проверки идут в CI (`.github/workflows/pr.yml`).
 
 - `make lint` — yamllint (`.yamllint.yaml`).
 - `make validate` — kubeconform для манифестов в `apps/` и `platform/` (values-файлы пропускаются),
   схемы CRD из закреплённого коммита datreeio/CRDs-catalog.
+- `make render` — `helm template` чартов Istio с values из `platform/istio/` (чарт, версия и values берутся
+  из Application) и `kubectl kustomize platform/istio/mesh`; результат проверяет kubeconform.
 - `make template` — `helm template` чарта каждого компонента из `services/` с его values: чарт берётся
   из клона `weigate` (`WEIGATE_DIR`, по умолчанию `../weigate`), результат проверяют kubeconform и правила
-  минимального стенда (1 реплика, без PDB, Istio, ExternalSecret и экспорта OTel, есть requests и limits).
+  минимального стенда (1 реплика, без PDB, VirtualService и DestinationRule, ExternalSecret и экспорта OTel, есть requests и limits).
 - `make policy` — правила из этого файла, видимые по тексту: нет `Namespace`, `CreateNamespace=true`,
   `Secret`, Bitnami; у каждого `Application` есть `argocd.argoproj.io/sync-wave`.
 - `make test-policy` — проверка `policy` на фикстурах из `test/policy/`.

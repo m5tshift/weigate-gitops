@@ -1,0 +1,44 @@
+# Wave 1: Istio CRDs and the default validating webhook (SRS 4.1.10, INF-3.1). Upstream chart base 1.30.8.
+# Prune is off for the same reason as for the Gateway API CRDs. istiod switches failurePolicy of its webhook to Fail.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: istio-base
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: weigate
+  sources:
+    - repoURL: https://istio-release.storage.googleapis.com/charts
+      chart: base
+      targetRevision: 1.30.8
+      helm:
+        releaseName: istio-base
+        valueFiles:
+          - $values/platform/istio/base/values.yaml
+    - repoURL: https://github.com/m5tshift/weigate-gitops
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-system
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[]?.failurePolicy
+        - .webhooks[]?.clientConfig.caBundle
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

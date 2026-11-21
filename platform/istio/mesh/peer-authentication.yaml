@@ -1,0 +1,9 @@
+# mTLS STRICT for the whole mesh (SRS 4.1.10): policy in the root namespace.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: istio-system
+spec:
+  mtls:
+    mode: STRICT

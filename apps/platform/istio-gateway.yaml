@@ -1,0 +1,40 @@
+# Wave 3: Istio Ingress Gateway pods and the NodePort Service 30443 that HAProxy forwards to (SRS 4.1.8,
+# role lb of weigate: lb_https_nodeport). Upstream chart gateway 1.30.8. The Gateway API Gateway in
+# platform/istio/mesh binds to this Service (manual deployment).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: istio-gateway
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: weigate
+  sources:
+    - repoURL: https://istio-release.storage.googleapis.com/charts
+      chart: gateway
+      targetRevision: 1.30.8
+      helm:
+        releaseName: istio-gateway
+        valueFiles:
+          - $values/platform/istio/gateway/values.yaml
+    - repoURL: https://github.com/m5tshift/weigate-gitops
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

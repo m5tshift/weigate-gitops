@@ -1,0 +1,2 @@
+# Values for the upstream Istio base chart (CRDs and the default validator).
+defaultRevision: default

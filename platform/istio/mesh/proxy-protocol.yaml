@@ -1,0 +1,24 @@
+# PROXY protocol v2 from HAProxy (SRS 4.1.8): the client address for per-IP limits comes from its header.
+# The header is optional, so the gateway also answers clients without HAProxy (direct NodePort, port-forward).
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: gateway-proxy-protocol
+  namespace: istio-system
+spec:
+  workloadSelector:
+    labels:
+      istio: gateway
+  configPatches:
+    - applyTo: LISTENER_FILTER
+      match:
+        context: GATEWAY
+        listener:
+          portNumber: 443
+      patch:
+        operation: INSERT_FIRST
+        value:
+          name: envoy.filters.listener.proxy_protocol
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.listener.proxy_protocol.v3.ProxyProtocol
+            allow_requests_without_proxy_protocol: true

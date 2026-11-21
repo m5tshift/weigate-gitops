@@ -1,0 +1,41 @@
+# Wave 2: istio-cni node agent (SRS 4.1.10, INF-1.1a). Upstream chart cni 1.30.8, chained to the cluster CNI
+# (flannel now, Cilium with cni.exclusive=false later). It sets up the sidecar redirection instead of istio-init,
+# so pods in apps need no NET_ADMIN/NET_RAW under the Talos baseline Pod Security. It runs in kube-system:
+# the DaemonSet is privileged and Talos exempts only kube-system from Pod Security.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: istio-cni
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: weigate
+  sources:
+    - repoURL: https://istio-release.storage.googleapis.com/charts
+      chart: cni
+      targetRevision: 1.30.8
+      helm:
+        releaseName: istio-cni
+        valueFiles:
+          - $values/platform/istio/cni/values.yaml
+    - repoURL: https://github.com/m5tshift/weigate-gitops
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

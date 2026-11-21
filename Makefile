@@ -1,4 +1,4 @@
-.PHONY: lint validate template policy test-policy precommit
+.PHONY: lint validate render template policy test-policy precommit
 
 # CRD schemas for kubeconform, pinned to a commit of the datreeio catalog.
 CRD_CATALOG_SHA := 3e8a8916ca1b7af6464606c2c2f5869dbafa9653
@@ -12,6 +12,10 @@ validate:
 	@files=$$(find apps platform -type f \( -name '*.yaml' -o -name '*.yml' \) ! -name 'values*.yaml' ! -name 'values*.yml' 2>/dev/null); \
 	if [ -z "$$files" ]; then echo "validate: no manifests"; exit 0; fi; \
 	echo "$$files" | xargs kubeconform -strict -summary -schema-location default -schema-location '$(CRD_SCHEMAS)'
+
+# Istio charts and platform/istio/mesh rendered with the values of this repository (hack/render.sh).
+render:
+	CRD_SCHEMAS='$(CRD_SCHEMAS)' hack/render.sh
 
 # Charts of services/ from a checkout of weigate rendered with the stand values (hack/template.sh).
 WEIGATE_DIR ?= ../weigate

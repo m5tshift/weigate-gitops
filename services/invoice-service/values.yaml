@@ -6,6 +6,11 @@ image:
 
 # SRS 6.4: one replica of every component; a PDB of one replica would block the drain of the only worker.
 replicaCount: 1
+
+# Sidecar in every pod of apps (SRS 4.1.10): with mTLS STRICT a pod without it can neither call nor be called.
+podLabels:
+  sidecar.istio.io/inject: "true"
+
 pdb:
   enabled: false
 
