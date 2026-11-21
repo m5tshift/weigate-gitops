@@ -53,7 +53,7 @@ spec:
             - name: REDIS_AUTH
               value: $(REDIS_USER):$(REDIS_PASSWORD)
             - name: CACHE_KEY_PREFIX
-              value: "ratelimit:"
+              value: "envoy-rls:"
           ports:
             - name: grpc
               containerPort: 8081
