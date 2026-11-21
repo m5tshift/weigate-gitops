@@ -1,7 +1,7 @@
-# AGENTS.md — slopay-gitops
+# AGENTS.md — weigate-gitops
 
-GitOps-репозиторий SLOPay: всё, что ArgoCD разворачивает в кластер выше bootstrap-слоя (SRS INF-2.2).
-Требования — в `docs/SRS.md` репозитория [`slopay`](https://github.com/m5tshift/slopay), там же общие правила
+GitOps-репозиторий Weigate: всё, что ArgoCD разворачивает в кластер выше bootstrap-слоя (SRS INF-2.2).
+Требования — в `docs/SRS.md` репозитория [`weigate`](https://github.com/m5tshift/weigate), там же общие правила
 в `AGENTS.md`. Ссылки вида «SRS 4.1.11» ведут на разделы SRS.
 
 ## Структура
@@ -15,7 +15,7 @@ platform/<component>/    values и манифесты: local-path-provisioner, c
                          cnpg, percona-mongodb, clickhouse, valkey, garage, openbao, external-secrets,
                          observability, holmesgpt, mailpit, arc, zot, karpenter, kwok, anvil,
                          network-policies
-platform/strimzi/        оператор и CR Kafka, целиком сгенерированы Ansible-ролью из slopay
+platform/strimzi/        оператор и CR Kafka, целиком сгенерированы Ansible-ролью из weigate
 services/<component>/values.yaml   values чарта из Zot: сервисы, merchant-mock, rate-mock, payer-sim,
                          holmes-bridge
 ```
@@ -26,13 +26,13 @@ services/<component>/values.yaml   values чарта из Zot: сервисы, m
 - **Секретов нет.** Только `ExternalSecret` со ссылками на OpenBao (SRS INF-2.4).
 - **Неймспейсы создаёт bootstrap-слой** (Terraform, SRS INF-2.2). Здесь нет `Namespace`
   и `CreateNamespace=true`.
-- **Чарты компонентов SLOPay берутся из Zot** как OCI-артефакты (SRS CI-5.3). Application указывает
+- **Чарты компонентов Weigate берутся из Zot** как OCI-артефакты (SRS CI-5.3). Application указывает
   версию чарта, values лежат здесь.
 - **Каждое изменение — через PR.** Исключение одно: CI основного репозитория пушит в `main` обновление
   тега образа и версии чарта через deploy key (SRS 4.1.11). Вручную `image.tag` и версия чарта не правятся.
   После merge или push ArgoCD применяет изменение сам (auto-sync, self-heal). `kubectl apply` и правка
   ресурсов в кластере запрещены.
-- **`platform/strimzi/` вручную не редактируется:** правится Ansible-роль в `slopay`, манифесты
+- **`platform/strimzi/` вручную не редактируется:** правится Ansible-роль в `weigate`, манифесты
   генерируются заново (SRS INF-2.3).
 - **Порядок развёртывания** задаётся `argocd.argoproj.io/sync-wave`: операторы и CRD раньше
   ресурсов, которые от них зависят.
@@ -54,7 +54,7 @@ services/<component>/values.yaml   values чарта из Zot: сервисы, m
 - `make validate` — kubeconform для манифестов в `apps/` и `platform/` (values-файлы пропускаются),
   схемы CRD из закреплённого коммита datreeio/CRDs-catalog.
 - `make template` — `helm template` чарта каждого компонента из `services/` с его values: чарт берётся
-  из клона `slopay` (`SLOPAY_DIR`, по умолчанию `../slopay`), результат проверяют kubeconform и правила
+  из клона `weigate` (`WEIGATE_DIR`, по умолчанию `../weigate`), результат проверяют kubeconform и правила
   минимального стенда (1 реплика, без PDB, Istio, ExternalSecret и экспорта OTel, есть requests и limits).
 - `make policy` — правила из этого файла, видимые по тексту: нет `Namespace`, `CreateNamespace=true`,
   `Secret`, Bitnami; у каждого `Application` есть `argocd.argoproj.io/sync-wave`.

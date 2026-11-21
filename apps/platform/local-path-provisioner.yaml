@@ -9,7 +9,7 @@ metadata:
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  project: slopay
+  project: weigate
   sources:
     - repoURL: https://github.com/rancher/local-path-provisioner
       targetRevision: v0.0.37
@@ -18,7 +18,7 @@ spec:
         releaseName: local-path-provisioner
         valueFiles:
           - $values/platform/local-path-provisioner/values.yaml
-    - repoURL: https://github.com/m5tshift/slopay-gitops
+    - repoURL: https://github.com/m5tshift/weigate-gitops
       targetRevision: main
       ref: values
   destination:

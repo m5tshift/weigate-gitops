@@ -5,15 +5,15 @@
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: slopay
+  name: weigate
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
 spec:
-  description: SLOPay platform and services
+  description: Weigate platform and services
   sourceRepos:
-    - https://github.com/m5tshift/slopay-gitops
-    - https://github.com/m5tshift/slopay
+    - https://github.com/m5tshift/weigate-gitops
+    - https://github.com/m5tshift/weigate
     - https://github.com/rancher/local-path-provisioner
     - https://strimzi.io/charts/
     - https://cloudnative-pg.github.io/charts

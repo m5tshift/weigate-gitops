@@ -10,16 +10,16 @@ metadata:
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  project: slopay
+  project: weigate
   sources:
-    - repoURL: https://github.com/m5tshift/slopay
+    - repoURL: https://github.com/m5tshift/weigate
       targetRevision: main
       path: charts/rate-service
       helm:
         releaseName: rate-service
         valueFiles:
           - $values/services/rate-service/values.yaml
-    - repoURL: https://github.com/m5tshift/slopay-gitops
+    - repoURL: https://github.com/m5tshift/weigate-gitops
       targetRevision: main
       ref: values
   destination:

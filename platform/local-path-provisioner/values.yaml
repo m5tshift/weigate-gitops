@@ -1,5 +1,5 @@
 # Values for the upstream local-path-provisioner chart (SRS INF-1.3, 6.4).
-# Data disk of talos-w-1 is the UserVolumeConfig "data", mounted at /var/mnt/data (infra/talos in slopay).
+# Data disk of talos-w-1 is the UserVolumeConfig "data", mounted at /var/mnt/data (infra/talos in weigate).
 replicaCount: 1
 
 helperImage:

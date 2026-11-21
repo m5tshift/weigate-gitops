@@ -9,7 +9,7 @@ metadata:
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  project: slopay
+  project: weigate
   sources:
     - repoURL: https://strimzi.io/charts/
       chart: strimzi-kafka-operator
@@ -18,7 +18,7 @@ spec:
         releaseName: strimzi-operator
         valueFiles:
           - $values/platform/strimzi/operator/values.yaml
-    - repoURL: https://github.com/m5tshift/slopay-gitops
+    - repoURL: https://github.com/m5tshift/weigate-gitops
       targetRevision: main
       ref: values
   destination:

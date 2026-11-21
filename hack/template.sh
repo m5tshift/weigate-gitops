@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Renders the chart of every component in services/ from a checkout of slopay with the stand values
+# Renders the chart of every component in services/ from a checkout of weigate with the stand values
 # and checks the result: kubeconform, the minimal stand rules (SRS 6.4) and the Application next to it.
-# Usage: SLOPAY_DIR=<checkout of m5tshift/slopay> hack/template.sh
+# Usage: WEIGATE_DIR=<checkout of m5tshift/weigate> hack/template.sh
 # Needs helm, kubeconform and yq (mikefarah v4).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-slopay=${SLOPAY_DIR:-../slopay}
-if [ ! -d "$slopay/charts" ]; then
-  echo "template: no charts in $slopay; set SLOPAY_DIR to a checkout of m5tshift/slopay" >&2
+weigate=${WEIGATE_DIR:-../weigate}
+if [ ! -d "$weigate/charts" ]; then
+  echo "template: no charts in $weigate; set WEIGATE_DIR to a checkout of m5tshift/weigate" >&2
   exit 1
 fi
 
@@ -27,17 +27,17 @@ fi
 
 for values in "${values_files[@]}"; do
   c=$(basename "$(dirname "$values")")
-  chart="$slopay/charts/$c"
+  chart="$weigate/charts/$c"
   app="apps/services/$c.yaml"
   manifest="$out/$c.yaml"
 
   if [ ! -f "$chart/Chart.yaml" ]; then report "$c: no chart $chart"; continue; fi
 
-  # The Application must take this chart from git of slopay with this values file.
+  # The Application must take this chart from git of weigate with this values file.
   if [ ! -f "$app" ]; then
     report "$c: no Application $app"
   else
-    path=$(yq eval 'select(.kind == "Application") | .spec.sources[] | select(.repoURL == "https://github.com/m5tshift/slopay") | .path' "$app")
+    path=$(yq eval 'select(.kind == "Application") | .spec.sources[] | select(.repoURL == "https://github.com/m5tshift/weigate") | .path' "$app")
     vf=$(yq eval 'select(.kind == "Application") | .spec.sources[].helm.valueFiles[]' "$app")
     ns=$(yq eval 'select(.kind == "Application") | .spec.destination.namespace' "$app")
     [ "$path" = "charts/$c" ] || report "$c: Application chart path is '$path', want charts/$c"
@@ -65,8 +65,8 @@ for values in "${values_files[@]}"; do
 
   image=$(yq eval-all "$deploy | .spec.template.spec.containers[0].image" "$manifest")
   case "$image" in
-    "ghcr.io/m5tshift/slopay/$c:"?*) ;;
-    *) report "$c: image '$image', want ghcr.io/m5tshift/slopay/$c:<tag>" ;;
+    "ghcr.io/m5tshift/weigate/$c:"?*) ;;
+    *) report "$c: image '$image', want ghcr.io/m5tshift/weigate/$c:<tag>" ;;
   esac
 
   if yq eval-all "$deploy | .spec.template.spec.containers[].env[] | select(.name == \"OTEL_EXPORTER_OTLP_ENDPOINT\")" \

@@ -13,10 +13,10 @@ validate:
 	if [ -z "$$files" ]; then echo "validate: no manifests"; exit 0; fi; \
 	echo "$$files" | xargs kubeconform -strict -summary -schema-location default -schema-location '$(CRD_SCHEMAS)'
 
-# Charts of services/ from a checkout of slopay rendered with the stand values (hack/template.sh).
-SLOPAY_DIR ?= ../slopay
+# Charts of services/ from a checkout of weigate rendered with the stand values (hack/template.sh).
+WEIGATE_DIR ?= ../weigate
 template:
-	SLOPAY_DIR=$(SLOPAY_DIR) hack/template.sh
+	WEIGATE_DIR=$(WEIGATE_DIR) hack/template.sh
 
 policy:
 	hack/policy.sh

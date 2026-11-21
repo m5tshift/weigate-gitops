@@ -1,8 +1,8 @@
-# Address for services: slopay-kafka-bootstrap.kafka.svc:9092 (plain, no TLS, no authentication on the minimal stand).
+# Address for services: weigate-kafka-bootstrap.kafka.svc:9092 (plain, no TLS, no authentication on the minimal stand).
 apiVersion: kafka.strimzi.io/v1
 kind: Kafka
 metadata:
-  name: slopay
+  name: weigate
   namespace: kafka
 spec:
   kafka:

@@ -81,9 +81,9 @@ jobs:
       # Charts of the minimal stand come from git of the main repository (SRS 6.4).
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
-          repository: m5tshift/slopay
+          repository: m5tshift/weigate
           ref: main
-          path: .slopay
+          path: .weigate
           persist-credentials: false
       - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e  # v5.1.0
         with:
@@ -97,7 +97,7 @@ jobs:
           tar -xzf kubeconform.tar.gz -C "$RUNNER_TEMP/bin" kubeconform
           rm kubeconform.tar.gz
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
-      - run: make template SLOPAY_DIR=.slopay
+      - run: make template WEIGATE_DIR=.weigate
 
   policy:
     name: policy

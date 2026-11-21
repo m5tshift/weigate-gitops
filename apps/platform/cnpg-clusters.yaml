@@ -10,9 +10,9 @@ metadata:
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  project: slopay
+  project: weigate
   source:
-    repoURL: https://github.com/m5tshift/slopay-gitops
+    repoURL: https://github.com/m5tshift/weigate-gitops
     targetRevision: main
     path: platform/cnpg/clusters
   destination:
