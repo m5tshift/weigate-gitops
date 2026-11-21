@@ -1,0 +1,32 @@
+# Wave 4: Envoy rate limit service on Valkey (SRS 4.1.8, INF-3.3). Needs Valkey and the Secret envoy-rls-valkey.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: envoy-rls
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: weigate
+  source:
+    repoURL: https://github.com/m5tshift/weigate-gitops
+    targetRevision: main
+    path: platform/envoy-rls
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

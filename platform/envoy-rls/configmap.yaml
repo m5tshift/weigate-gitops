@@ -1,0 +1,47 @@
+# Limits of the global rate limiter (SRS 4.1.8). The descriptors are produced by platform/istio/mesh/ratelimit.yaml.
+# The merchant is the sub claim of the JWT, the IP is the client address from PROXY protocol.
+# Not done: auth/token 10/min per API key. The key is in the request body, which Envoy RLS cannot read.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: envoy-rls-config
+  namespace: istio-system
+data:
+  weigate.yaml: |
+    domain: weigate
+    descriptors:
+      - key: header_match
+        value: create_invoice
+        descriptors:
+          - key: merchant
+            rate_limit:
+              unit: minute
+              requests_per_unit: 60
+      - key: header_match
+        value: get_invoice
+        descriptors:
+          - key: merchant
+            rate_limit:
+              unit: second
+              requests_per_unit: 10
+      - key: header_match
+        value: pay_status
+        descriptors:
+          - key: remote_address
+            rate_limit:
+              unit: second
+              requests_per_unit: 1
+      - key: header_match
+        value: auth_token
+        descriptors:
+          - key: remote_address
+            rate_limit:
+              unit: minute
+              requests_per_unit: 30
+      - key: header_match
+        value: register
+        descriptors:
+          - key: remote_address
+            rate_limit:
+              unit: minute
+              requests_per_unit: 5

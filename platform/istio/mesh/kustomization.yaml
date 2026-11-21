@@ -6,4 +6,5 @@ resources:
   - proxy-protocol.yaml
   - peer-authentication.yaml
   - request-authentication.yaml
+  - ratelimit.yaml
   - authorization-policy.yaml

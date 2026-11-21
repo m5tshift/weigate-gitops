@@ -1,5 +1,6 @@
 # The gateway checks the JWT signature against the JWKS of merchant-service (SRS 4.1.10). iss is JWT_ISSUER of
-# merchant-service. The token is forwarded: invoice-service checks it too.
+# merchant-service. The token is forwarded: invoice-service checks it too. The sub claim (merchant id) goes to
+# x-merchant-id for the per-merchant rate limits (ratelimit.yaml).
 apiVersion: security.istio.io/v1
 kind: RequestAuthentication
 metadata:
@@ -13,3 +14,6 @@ spec:
     - issuer: weigate-merchant-service
       jwksUri: http://merchant-service.apps.svc.cluster.local:8080/.well-known/jwks.json
       forwardOriginalToken: true
+      outputClaimToHeaders:
+        - header: x-merchant-id
+          claim: sub
