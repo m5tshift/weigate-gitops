@@ -1,0 +1,74 @@
+# Full stand profile of MongoDB (SRS 4.1.6, 6.2, 6.3, INF-2.4): not synced on the minimal stand (SRS 6.4).
+# The percona-mongodb Application switches to this directory together with the move to the full stand (m5tshift/weigate#183).
+# On top of platform/percona-mongodb/cluster: replica set of 3 members on different nodes (768Mi each, SRS 6.2),
+# users of webhook-service and reconciliation-service, Percona Backup for MongoDB to the Garage bucket mongo-backups
+# (daily at 03:00 UTC, 7 days). Passwords and S3 keys come from OpenBao through ExternalSecret.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../cluster
+  - externalsecret.yaml
+patches:
+  - target:
+      kind: PerconaServerMongoDB
+      name: mongodb
+    patch: |-
+      - op: remove
+        path: /spec/unsafeFlags
+      - op: replace
+        path: /spec/replsets/0/size
+        value: 3
+      - op: replace
+        path: /spec/replsets/0/affinity/antiAffinityTopologyKey
+        value: kubernetes.io/hostname
+      - op: replace
+        path: /spec/replsets/0/resources
+        value:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 768Mi
+      - op: replace
+        path: /spec/backup
+        value:
+          enabled: true
+          image: percona/percona-backup-mongodb:2.15.0
+          storages:
+            garage:
+              type: s3
+              s3:
+                bucket: mongo-backups
+                region: garage
+                endpointUrl: http://garage.data:3900
+                credentialsSecret: mongodb-backup-s3
+          tasks:
+            - name: daily
+              enabled: true
+              schedule: "0 3 * * *"
+              keep: 7
+              storageName: garage
+              type: logical
+      - op: add
+        path: /spec/users/-
+        value:
+          name: webhook-service
+          db: webhook_service
+          passwordSecretRef:
+            name: mongodb-users
+            key: webhook-service
+          roles:
+            - name: readWrite
+              db: webhook_service
+      - op: add
+        path: /spec/users/-
+        value:
+          name: reconciliation-service
+          db: reconciliation_service
+          passwordSecretRef:
+            name: mongodb-users
+            key: reconciliation-service
+          roles:
+            - name: readWrite
+              db: reconciliation_service
