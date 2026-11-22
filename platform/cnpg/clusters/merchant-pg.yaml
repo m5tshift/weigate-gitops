@@ -14,6 +14,14 @@ spec:
       owner: merchant-service
       secret:
         name: merchant-pg-app-credentials
+  managed:
+    roles:
+      - name: vault-admin
+        ensure: present
+        login: true
+        createrole: true
+        passwordSecret:
+          name: merchant-pg-vault-admin
   storage:
     storageClass: local-path
     size: 5Gi
