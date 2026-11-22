@@ -1,0 +1,16 @@
+# Values for the kwok/charts chart of kubernetes-sigs/karpenter v1.15.1 (SRS INF-1.2, ADR 0006).
+# The chart always renders a PodDisruptionBudget (maxUnavailable 1) and has no switch for it: with one replica it
+# never blocks a drain. Two replicas and the topology spread of the full profile: m5tshift/weigate#183.
+replicas: 1
+
+controller:
+  image:
+    repository: ghcr.io/m5tshift/weigate/karpenter-kwok
+    tag: v1.15.1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi

@@ -1,0 +1,34 @@
+# Wave 2: default lifecycle Stages of KWOK (node-initialize, pod-ready and others), chart stage-fast 0.3.0. After the CRD of kwok.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kwok-stages
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: weigate
+  source:
+    repoURL: https://kwok.sigs.k8s.io/charts/
+    chart: stage-fast
+    targetRevision: 0.3.0
+    helm:
+      releaseName: kwok-stages
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

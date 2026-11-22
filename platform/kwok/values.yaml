@@ -1,0 +1,10 @@
+# Values for the upstream kwok chart 0.3.0 (SRS INF-1.2). One replica: it only simulates nodes of the demo.
+replicas: 1
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi

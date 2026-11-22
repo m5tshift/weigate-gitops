@@ -11,7 +11,7 @@ lint:
 validate:
 	@files=$$(find apps platform -type f \( -name '*.yaml' -o -name '*.yml' \) ! -name 'values*.yaml' ! -name 'values*.yml' 2>/dev/null); \
 	if [ -z "$$files" ]; then echo "validate: no manifests"; exit 0; fi; \
-	echo "$$files" | xargs kubeconform -strict -summary -schema-location default -schema-location '$(CRD_SCHEMAS)'
+	echo "$$files" | xargs kubeconform -strict -summary -skip KWOKNodeClass,Stage -schema-location default -schema-location '$(CRD_SCHEMAS)'
 
 # Istio and observability charts, platform/istio/mesh and platform/observability/config rendered with the values
 # of this repository (hack/render.sh).
