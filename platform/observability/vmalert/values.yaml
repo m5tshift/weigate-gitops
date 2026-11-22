@@ -1,6 +1,6 @@
 # Values for victoria-metrics-alert (SRS 4.5.2, 4.5.4, 6.2): vmalert evaluates rules on VictoriaMetrics and sends
 # alerts to Alertmanager. Alertmanager reads alertmanager.yaml from Secret alertmanager-config, rendered by ESO from
-# OpenBao (config/externalsecrets.yaml): the only receiver is Telegram. The rule groups are filled by the alerts task.
+# OpenBao (config/externalsecrets.yaml): the only receiver is Telegram. Rules: the 17 alerts of SRS 4.5.4, each with severity and runbook_url.
 server:
   fullnameOverride: vmalert
   datasource:
@@ -11,7 +11,160 @@ server:
     url: http://victoria-metrics:8428
   config:
     alerts:
-      groups: []
+      groups:
+        - name: weigate-chain
+          rules:
+            - alert: ChainWatcherLagging
+              expr: >-
+                weigate_chain_head_block - weigate_chain_cursor_block > 10
+              for: 2m
+              labels:
+                severity: warning
+              annotations:
+                summary: chain-watcher lags behind the node head by more than 10 blocks
+                runbook_url: https://github.com/m5tshift/weigate/blob/main/docs/runbooks/ChainWatcherLagging.md
+            - alert: ChainNodeUnavailable
+              expr: >-
+                weigate_circuit_breaker_state{dependency="node"} == 2
+              for: 1m
+              labels:
+                severity: critical
+              annotations:
+                summary: Circuit Breaker of the blockchain node is open
+                runbook_url: https://github.com/m5tshift/weigate/blob/main/docs/runbooks/ChainNodeUnavailable.md
+            - alert: ChainReorgDetected
+              expr: >-
+                sum(increase(weigate_chain_reorgs_total{depth!~"[0-2]"}[5m])) > 0
+              labels:
+                severity: info
+              annotations:
+                summary: Reorg deeper than 2 blocks
+                runbook_url: https://github.com/m5tshift/weigate/blob/main/docs/runbooks/ChainReorgDetected.md
+            - alert: ChainReorgTooDeep
+              expr: >-
+                weigate_chain_reorg_too_deep == 1
+              labels:
+                severity: critical
+              annotations:
+                summary: Reorg deeper than 6 blocks, chain reading is stopped
+                runbook_url: https://github.com/m5tshift/weigate/blob/main/docs/runbooks/ChainReorgTooDeep.md
+        - name: weigate-rate
+          rules:
+            - alert: RateStale
+              expr: >-
+                weigate_rate_age_seconds > 60
+              labels:
+                severity: warning
+              annotations:
+                summary: Exchange rate is older than 60 s
+                runbook_url: https://github.com/m5tshift/weigate/blob/main/docs/runbooks/RateStale.md
+            - alert: RateSourceDown
+              expr: >-
+                weigate_circuit_breaker_state{dependency=~"coinbase|okx"} == 2
+              for: 5m
+              labels:
+                severity: warning
+              annotations:
+                summary: Circuit Breaker of a rate source is open
+                runbook_url: https://github.com/m5tshift/weigate/blob/main/docs/runbooks/RateSourceDown.md
+            - alert: RateDivergence
+              expr: >-
+                weigate_rate_divergence_bps > 100
+              labels:
+                severity: warning
+              annotations:
+                summary: Coinbase and OKX quotes diverge by more than 1 percent
+                runbook_url: https://github.com/m5tshift/weigate/blob/main/docs/runbooks/RateDivergence.md
+        - name: weigate-business
+          rules:
+            - alert: WebhookDLQGrowing
+              expr: >-
+                sum(delta(kafka_topic_partition_current_offset{topic="webhook.dlq"}[10m])) > 0
+              labels:
+                severity: warning
+              annotations:
+                summary: Messages are added to webhook.dlq
+                runbook_url: https://github.com/m5tshift/weigate/blob/main/docs/runbooks/WebhookDLQGrowing.md
+            - alert: KafkaConsumerLagHigh
+              expr: >-
+                sum by (consumergroup, topic) (deriv(kafka_consumergroup_lag[5m])) > 0
+              for: 5m
+              labels:
+                severity: warning
+              annotations:
+                summary: Consumer lag grows for 5 minutes
+                runbook_url: https://github.com/m5tshift/weigate/blob/main/docs/runbooks/KafkaConsumerLagHigh.md
+            - alert: InvoiceExpiredRatioHigh
+              expr: >-
+                sum(increase(weigate_invoice_transitions_total{type="invoice.expired"}[15m]))
+                / sum(increase(weigate_invoice_transitions_total{type=~"invoice.expired|invoice.paid"}[15m])) > 0.3
+              labels:
+                severity: warning
+              annotations:
+                summary: More than 30 percent of closed invoices are EXPIRED over 15 minutes
+                runbook_url: https://github.com/m5tshift/weigate/blob/main/docs/runbooks/InvoiceExpiredRatioHigh.md
+            - alert: ReconciliationMismatch
+              expr: >-
+                weigate_reconciliation_mismatches > 0
+              labels:
+                severity: critical
+              annotations:
+                summary: Reconciliation found a discrepancy
+                runbook_url: https://github.com/m5tshift/weigate/blob/main/docs/runbooks/ReconciliationMismatch.md
+        - name: platform
+          rules:
+            - alert: UpstreamEjected
+              expr: >-
+                envoy_cluster_outlier_detection_ejections_active > 0
+              labels:
+                severity: warning
+              annotations:
+                summary: Outlier detection ejected a service instance
+                runbook_url: https://github.com/m5tshift/weigate/blob/main/docs/runbooks/UpstreamEjected.md
+            - alert: High5xxRate
+              expr: >-
+                sum by (job) (rate(http_server_request_errors_total[5m])) / sum by (job) (rate(http_server_requests_total[5m])) > 0.05
+              for: 5m
+              labels:
+                severity: critical
+              annotations:
+                summary: More than 5 percent of requests end with 5xx
+                runbook_url: https://github.com/m5tshift/weigate/blob/main/docs/runbooks/High5xxRate.md
+            - alert: LatencySLOBurn
+              expr: >-
+                histogram_quantile(0.95, sum by (job, le) (rate(http_server_request_duration_seconds_bucket[5m]))) > 0.3
+              for: 10m
+              labels:
+                severity: warning
+              annotations:
+                summary: p95 request latency is above 300 ms (NFR-02)
+                runbook_url: https://github.com/m5tshift/weigate/blob/main/docs/runbooks/LatencySLOBurn.md
+            - alert: ServiceDown
+              expr: >-
+                kube_deployment_status_replicas_available{namespace="apps"} == 0
+              for: 2m
+              labels:
+                severity: critical
+              annotations:
+                summary: No ready replica of the service
+                runbook_url: https://github.com/m5tshift/weigate/blob/main/docs/runbooks/ServiceDown.md
+            - alert: PodCrashLooping
+              expr: >-
+                increase(kube_pod_container_status_restarts_total[15m]) > 3
+              labels:
+                severity: warning
+              annotations:
+                summary: Container restarts repeatedly
+                runbook_url: https://github.com/m5tshift/weigate/blob/main/docs/runbooks/PodCrashLooping.md
+            - alert: PVCAlmostFull
+              expr: >-
+                kubelet_volume_stats_available_bytes / kubelet_volume_stats_capacity_bytes < 0.1
+              for: 5m
+              labels:
+                severity: warning
+              annotations:
+                summary: Less than 10 percent free on a volume
+                runbook_url: https://github.com/m5tshift/weigate/blob/main/docs/runbooks/PVCAlmostFull.md
   resources:
     requests:
       cpu: 20m

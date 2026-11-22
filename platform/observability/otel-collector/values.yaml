@@ -26,6 +26,12 @@ extraEnvs:
     valueFrom:
       fieldRef:
         fieldPath: metadata.name
+clusterRole:
+  create: true
+  rules:
+    - apiGroups: [""]
+      resources: ["nodes/metrics"]
+      verbs: ["get"]
 config:
   receivers:
     jaeger: null
@@ -37,6 +43,24 @@ config:
         endpoint: http://otel-target-allocator-ta
         interval: 30s
         collector_id: ${env:K8S_POD_NAME}
+    # Volume usage for PVCAlmostFull (SRS 4.5.4): the kubelet of the own node, only kubelet_volume_stats_*.
+    # The Talos kubelet certificate is self-signed.
+    prometheus/kubelet:
+      config:
+        scrape_configs:
+          - job_name: kubelet
+            scheme: https
+            scrape_interval: 30s
+            authorization:
+              credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+            tls_config:
+              insecure_skip_verify: true
+            static_configs:
+              - targets: ["${env:K8S_NODE_IP}:10250"]
+            metric_relabel_configs:
+              - source_labels: [__name__]
+                regex: kubelet_volume_stats_.*
+                action: keep
   exporters:
     prometheusremotewrite:
       endpoint: http://victoria-metrics.observability:8428/api/v1/write
@@ -49,7 +73,7 @@ config:
   service:
     pipelines:
       metrics:
-        receivers: [otlp, prometheus]
+        receivers: [otlp, prometheus, prometheus/kubelet]
         processors: [memory_limiter, batch]
         exporters: [prometheusremotewrite]
       logs:
