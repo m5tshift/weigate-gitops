@@ -1,4 +1,4 @@
-.PHONY: lint validate render template policy test-policy precommit
+.PHONY: lint validate render template alerts policy test-policy precommit
 
 # CRD schemas for kubeconform, pinned to a commit of the datreeio catalog.
 CRD_CATALOG_SHA := 3e8a8916ca1b7af6464606c2c2f5869dbafa9653
@@ -22,6 +22,10 @@ render:
 WEIGATE_DIR ?= ../weigate
 template:
 	WEIGATE_DIR=$(WEIGATE_DIR) hack/template.sh
+
+# vmalert -dryRun of the rules of platform/observability/vmalert (hack/alerts.sh).
+alerts:
+	hack/alerts.sh
 
 policy:
 	hack/policy.sh

@@ -134,3 +134,26 @@ jobs:
           persist-credentials: false
       - run: make test-policy
       - run: make policy
+
+  alerts:
+    name: alerts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      VMALERT_VERSION: v1.156.0  # as the vmalert image of chart victoria-metrics-alert 0.53.0
+      VMUTILS_SHA256: d71f7f00e07782531000620ec6c2a9d7ec83324f364dd1f36095ab378b5fb43b
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install vmalert
+        run: |
+          curl -sSfL -o vmutils.tar.gz \
+            "https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/${VMALERT_VERSION}/vmutils-linux-amd64-${VMALERT_VERSION}.tar.gz"
+          echo "${VMUTILS_SHA256}  vmutils.tar.gz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/bin"
+          tar -xzf vmutils.tar.gz -C "$RUNNER_TEMP/bin" vmalert-prod
+          ln -s vmalert-prod "$RUNNER_TEMP/bin/vmalert"
+          rm vmutils.tar.gz
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - run: make alerts
