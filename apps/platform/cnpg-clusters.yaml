@@ -1,5 +1,6 @@
 # Wave 2: one single-instance PostgreSQL cluster per service, no backups (SRS 4.1.6, 6.4).
-# The initdb Secrets <cluster>-app-credentials in data come from the stand secrets script (later ESO), not from git.
+# The initdb Secrets <cluster>-app-credentials in data come from the stand secrets script, not from git.
+# Full stand: path platform/cnpg/full (2 instances, ledger-pg, Barman Cloud backups to Garage), switched in m5tshift/weigate#183.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

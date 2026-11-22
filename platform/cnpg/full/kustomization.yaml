@@ -1,0 +1,55 @@
+# Full stand profile of the PostgreSQL clusters (SRS 4.1.6, 6.2, 6.3, INF-2.4): not synced on the minimal stand (SRS 6.4).
+# The cnpg-clusters Application switches to this directory together with the move to the full stand (m5tshift/weigate#183).
+# On top of platform/cnpg/clusters: 2 instances, ledger-pg, Barman Cloud backups to the Garage bucket pg-backups
+# (daily base backup, continuous WAL, 7 days), no initdb Secret from the stand script: the owner password is
+# rotated by the OpenBao static role. Memory per instance follows the SRS 6.2 budget.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../clusters
+  - ledger-pg.yaml
+  - externalsecret.yaml
+  - scheduledbackups.yaml
+patches:
+  - target:
+      kind: Cluster
+    patch: |-
+      - op: replace
+        path: /spec/instances
+        value: 2
+      - op: replace
+        path: /spec/resources
+        value:
+          requests:
+            cpu: 100m
+            memory: 192Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+      - op: add
+        path: /spec/backup
+        value:
+          retentionPolicy: 7d
+          barmanObjectStore:
+            destinationPath: s3://pg-backups/
+            endpointURL: http://garage.data:3900
+            s3Credentials:
+              accessKeyId:
+                name: pg-backups-s3
+                key: ACCESS_KEY_ID
+              secretAccessKey:
+                name: pg-backups-s3
+                key: ACCESS_SECRET_KEY
+              region:
+                name: pg-backups-s3
+                key: REGION
+            wal:
+              compression: gzip
+            data:
+              compression: gzip
+  - target:
+      kind: Cluster
+      name: (merchant|invoice)-pg
+    patch: |-
+      - op: remove
+        path: /spec/bootstrap/initdb/secret

@@ -1,0 +1,36 @@
+# Daily base backup at 03:00 of each cluster (SRS 4.1.6); WAL is archived continuously, retention 7d is on the Cluster.
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: merchant-pg-daily
+  namespace: data
+spec:
+  schedule: "0 0 3 * * *"
+  backupOwnerReference: self
+  method: barmanObjectStore
+  cluster:
+    name: merchant-pg
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: invoice-pg-daily
+  namespace: data
+spec:
+  schedule: "0 0 3 * * *"
+  backupOwnerReference: self
+  method: barmanObjectStore
+  cluster:
+    name: invoice-pg
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: ledger-pg-daily
+  namespace: data
+spec:
+  schedule: "0 0 3 * * *"
+  backupOwnerReference: self
+  method: barmanObjectStore
+  cluster:
+    name: ledger-pg

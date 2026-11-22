@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Renders the Istio and observability charts with the values of this repository and the kustomizations of
-# platform/istio/mesh and platform/observability/config, and validates the result with kubeconform.
+# platform/istio/mesh, platform/observability/config and both CNPG profiles, and validates the result with kubeconform.
 # Chart, version and values files come from the Applications.
 # Usage: hack/render.sh   (needs helm, kubectl, kubeconform and yq v4; network access to the chart repositories)
 set -euo pipefail
@@ -40,7 +40,7 @@ for app in apps/platform/istio*.yaml apps/platform/observability*.yaml; do
   fi
 done
 
-for dir in platform/istio/mesh platform/observability/config; do
+for dir in platform/istio/mesh platform/observability/config platform/cnpg/clusters platform/cnpg/full; do
   name=$(echo "${dir#platform/}" | tr / -)
   if kubectl kustomize "$dir" >"$out/$name.yaml"; then
     check "$name" "$out/$name.yaml"
@@ -48,5 +48,16 @@ for dir in platform/istio/mesh platform/observability/config; do
     echo "render: $name: kustomize failed"; fail=1
   fi
 done
+
+# CNPG profiles: the minimal stand has 1 instance and no backups (SRS 6.4); the full one has 3 clusters with 2 instances,
+# Barman Cloud with retention 7d and a ScheduledBackup each (SRS 4.1.6).
+clusters() { yq -N 'select(.kind == "Cluster") | [.metadata.name, .spec.instances, .spec.backup.retentionPolicy // "none"] | join(" ")' "$1" | sed '/^$/d'; }
+bad=$(clusters "$out/cnpg-clusters.yaml" | grep -v ' 1 none$' || true)
+[ -z "$bad" ] || { echo "render: cnpg-clusters: want 1 instance and no backup: $bad"; fail=1; }
+full=$(clusters "$out/cnpg-full.yaml")
+[ "$(grep -c ' 2 7d$' <<<"$full")" = 3 ] && [ "$(wc -l <<<"$full")" -eq 3 ] \
+  || { echo "render: cnpg-full: want 3 clusters with 2 instances and backup 7d: $full"; fail=1; }
+backups=$(yq -N 'select(.kind == "ScheduledBackup") | .spec.cluster.name' "$out/cnpg-full.yaml" | sed '/^$/d' | sort | tr '\n' ' ')
+[ "$backups" = "invoice-pg ledger-pg merchant-pg " ] || { echo "render: cnpg-full: ScheduledBackup for '$backups'"; fail=1; }
 
 exit "$fail"
