@@ -1,0 +1,19 @@
+# Standalone OpenBao, file storage on a local-path PV. Unsealed by hand (SRS INF-2.4).
+injector:
+  enabled: false
+server:
+  standalone:
+    enabled: true
+  ha:
+    enabled: false
+  dataStorage:
+    enabled: true
+    size: 1Gi
+    storageClass: local-path
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
