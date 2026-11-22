@@ -1,0 +1,33 @@
+# Wave 2: GitHub credentials (ExternalSecret) and network policy of the runners (SRS CI-5.1, 4.1.11).
+# Not read by the root Application on the minimal stand (SRS 6.4): moves to apps/platform with m5tshift/weigate#183.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: arc-config
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: weigate
+  source:
+    repoURL: https://github.com/m5tshift/weigate-gitops
+    targetRevision: main
+    path: platform/arc/config
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ci
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
