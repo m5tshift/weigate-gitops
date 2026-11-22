@@ -12,6 +12,13 @@ replicaCount: 1
 podLabels:
   sidecar.istio.io/inject: "true"
 
+# The istio agent merges /metrics of the app into :15020/stats/prometheus, which the OTel Collector scrapes outside
+# mTLS STRICT (platform/observability/config/monitors.yaml, SRS 4.5.1).
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: /metrics
+
 pdb:
   enabled: false
 leader:

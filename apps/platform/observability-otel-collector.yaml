@@ -1,0 +1,39 @@
+# Wave 4: OTel Collector DaemonSet, the single path of metrics, logs and traces (SRS 4.5.1). Chart opentelemetry-collector 0.182.0.
+# It runs in kube-system: the pod log hostPath needs the Pod Security exemption Talos gives only kube-system.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observability-otel-collector
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: weigate
+  sources:
+    - repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
+      chart: opentelemetry-collector
+      targetRevision: 0.182.0
+      helm:
+        releaseName: otel-collector
+        valueFiles:
+          - $values/platform/observability/otel-collector/values.yaml
+    - repoURL: https://github.com/m5tshift/weigate-gitops
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

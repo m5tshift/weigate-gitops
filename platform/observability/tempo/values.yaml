@@ -1,0 +1,38 @@
+# Values for the tempo chart, monolithic mode (SRS 4.5.2, 6.2). OTLP gRPC on tempo.observability:4317, query API on :3200.
+# Blocks go to the Garage bucket tempo-traces; the keys come from Secret tempo-s3 (config/externalsecrets.yaml)
+# as AWS_* variables picked up by the S3 client.
+tempo:
+  reportingEnabled: false
+  retention: 72h
+  storage:
+    trace:
+      backend: s3
+      s3:
+        bucket: tempo-traces
+        endpoint: garage.data:3900
+        region: garage
+        insecure: true
+        forcepathstyle: true
+      wal:
+        path: /var/tempo/wal
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+  extraEnvFrom:
+    - secretRef:
+        name: tempo-s3
+  resources:
+    requests:
+      cpu: 100m
+      memory: 192Mi
+    limits:
+      cpu: "1"
+      memory: 448Mi
+# WAL and live traces before they are flushed to S3.
+persistence:
+  enabled: true
+  size: 5Gi

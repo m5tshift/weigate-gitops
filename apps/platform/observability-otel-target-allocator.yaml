@@ -1,0 +1,39 @@
+# Wave 4: OTel Target Allocator: turns ServiceMonitor and PodMonitor into scrape targets of the collectors (SRS 4.5.1).
+# Chart opentelemetry-target-allocator 0.163.0, next to the collector DaemonSet in kube-system.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observability-otel-target-allocator
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: weigate
+  sources:
+    - repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
+      chart: opentelemetry-target-allocator
+      targetRevision: 0.163.0
+      helm:
+        releaseName: otel-target-allocator
+        valueFiles:
+          - $values/platform/observability/otel-target-allocator/values.yaml
+    - repoURL: https://github.com/m5tshift/weigate-gitops
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

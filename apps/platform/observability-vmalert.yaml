@@ -1,0 +1,39 @@
+# Wave 4: vmalert and Alertmanager with the Telegram receiver (SRS 4.5.2, 4.5.4). Chart victoria-metrics-alert 0.53.0.
+# Rules are added by the alerts task; the Alertmanager config comes from OpenBao (config/externalsecrets.yaml).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observability-vmalert
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: weigate
+  sources:
+    - repoURL: https://victoriametrics.github.io/helm-charts
+      chart: victoria-metrics-alert
+      targetRevision: 0.53.0
+      helm:
+        releaseName: vmalert
+        valueFiles:
+          - $values/platform/observability/vmalert/values.yaml
+    - repoURL: https://github.com/m5tshift/weigate-gitops
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

@@ -1,0 +1,39 @@
+# Wave 4: Grafana Tempo monolithic, traces in the Garage bucket tempo-traces (SRS 4.5.2, INF-1.3).
+# Chart tempo 3.2.1 of grafana-community (the grafana repository charts are deprecated).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observability-tempo
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: weigate
+  sources:
+    - repoURL: https://grafana-community.github.io/helm-charts
+      chart: tempo
+      targetRevision: 3.2.1
+      helm:
+        releaseName: tempo
+        valueFiles:
+          - $values/platform/observability/tempo/values.yaml
+    - repoURL: https://github.com/m5tshift/weigate-gitops
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

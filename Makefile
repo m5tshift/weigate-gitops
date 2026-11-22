@@ -13,7 +13,8 @@ validate:
 	if [ -z "$$files" ]; then echo "validate: no manifests"; exit 0; fi; \
 	echo "$$files" | xargs kubeconform -strict -summary -schema-location default -schema-location '$(CRD_SCHEMAS)'
 
-# Istio charts and platform/istio/mesh rendered with the values of this repository (hack/render.sh).
+# Istio and observability charts, platform/istio/mesh and platform/observability/config rendered with the values
+# of this repository (hack/render.sh).
 render:
 	CRD_SCHEMAS='$(CRD_SCHEMAS)' hack/render.sh
 
