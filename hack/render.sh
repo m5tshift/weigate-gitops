@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Renders the ARC charts and kustomization (platform/arc), the Istio and observability charts with the values of this repository and the kustomizations of
-# platform/istio/mesh, platform/observability/config and both CNPG and both MongoDB profiles, platform/clickhouse/full, the operator chart of platform/clickhouse, and validates the result with kubeconform.
+# platform/istio/mesh, platform/observability/config and both CNPG and both MongoDB profiles, platform/clickhouse/full, platform/network-policies/policies, the operator chart of platform/clickhouse, and validates the result with kubeconform.
 # Chart, version and values files come from the Applications.
 # Usage: hack/render.sh   (needs helm, kubectl, kubeconform and yq v4; network access to the chart repositories)
 set -euo pipefail
@@ -41,7 +41,8 @@ for app in apps/platform/istio*.yaml apps/platform/observability*.yaml; do
 done
 
 for dir in platform/istio/mesh platform/observability/config platform/cnpg/clusters platform/cnpg/full \
-  platform/percona-mongodb/cluster platform/percona-mongodb/full platform/clickhouse/full; do
+  platform/percona-mongodb/cluster platform/percona-mongodb/full platform/clickhouse/full \
+  platform/network-policies/policies; do
   name=$(echo "${dir#platform/}" | tr / -)
   if kubectl kustomize "$dir" >"$out/$name.yaml"; then
     check "$name" "$out/$name.yaml"

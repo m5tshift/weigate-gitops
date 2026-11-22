@@ -1,0 +1,14 @@
+# Namespace ci: ingress of the runners and the controller is closed (SRS 4.1.11); their egress is in
+# platform/arc/config/policies.yaml.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: default
+  namespace: ci
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            app.kubernetes.io/name: opentelemetry-collector

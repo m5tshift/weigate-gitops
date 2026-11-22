@@ -1,0 +1,48 @@
+# Namespace chain: the Anvil node. Readers of blocks and payer-sim only; no egress besides DNS.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: default
+  namespace: chain
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            app.kubernetes.io/name: opentelemetry-collector
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: ANY
+          rules:
+            dns:
+              - matchPattern: "*"
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: anvil
+  namespace: chain
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: anvil
+  ingress:
+    - fromEndpoints:
+        - matchExpressions:
+            - key: k8s:io.kubernetes.pod.namespace
+              operator: In
+              values: [apps]
+            - key: app.kubernetes.io/name
+              operator: In
+              values: [chain-watcher, reconciliation-service, payer-sim]
+      toPorts:
+        - ports:
+            - port: "8545"
+              protocol: TCP

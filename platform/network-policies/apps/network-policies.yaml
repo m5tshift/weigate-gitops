@@ -1,0 +1,36 @@
+# Wave 5: Cilium network policies (SRS 4.1.10, 4.1.11), after every workload is up. A wrong rule is undone by a revert:
+# argocd itself is not under default-deny.
+# Not read by the root Application on the minimal stand (SRS 6.4): it has flannel, no Cilium and no CiliumNetworkPolicy CRD.
+# Moves to apps/platform with m5tshift/weigate#183.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: network-policies
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: weigate
+  source:
+    repoURL: https://github.com/m5tshift/weigate-gitops
+    targetRevision: main
+    path: platform/network-policies/policies
+  # Every policy sets its own namespace.
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: apps
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

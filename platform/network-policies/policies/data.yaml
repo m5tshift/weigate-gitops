@@ -1,0 +1,206 @@
+# Namespace data: PostgreSQL (CloudNativePG), MongoDB (Percona), Valkey, ClickHouse, Garage and their operators.
+# Inside the namespace everything is open (operators and instances, backups to Garage, jobs); from outside only the
+# owners of each store (database-per-service, SRS 4.1.6).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: default
+  namespace: data
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            app.kubernetes.io/name: opentelemetry-collector
+    # Admission webhooks of the operators.
+    - fromEntities:
+        - kube-apiserver
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: ANY
+          rules:
+            dns:
+              - matchPattern: "*"
+    - toEndpoints:
+        - {}
+    # Operators and CloudNativePG instance managers.
+    - toEntities:
+        - kube-apiserver
+---
+# Each PostgreSQL cluster: its service and the database engine of OpenBao (static roles).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: invoice-pg
+  namespace: data
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: invoice-pg
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: apps
+            app.kubernetes.io/name: invoice-service
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: secrets
+            app.kubernetes.io/name: openbao
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: merchant-pg
+  namespace: data
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: merchant-pg
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: apps
+            app.kubernetes.io/name: merchant-service
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: secrets
+            app.kubernetes.io/name: openbao
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: ledger-pg
+  namespace: data
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: ledger-pg
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: apps
+            app.kubernetes.io/name: ledger-service
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: secrets
+            app.kubernetes.io/name: openbao
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: mongodb
+  namespace: data
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/instance: mongodb
+  ingress:
+    - fromEndpoints:
+        - matchExpressions:
+            - key: k8s:io.kubernetes.pod.namespace
+              operator: In
+              values: [apps]
+            - key: app.kubernetes.io/name
+              operator: In
+              values: [chain-watcher, webhook-service, reconciliation-service]
+      toPorts:
+        - ports:
+            - port: "27017"
+              protocol: TCP
+---
+# Valkey: services of SRS 4.1.7 and the backend of Envoy RLS.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: valkey
+  namespace: data
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: valkey
+  ingress:
+    - fromEndpoints:
+        - matchExpressions:
+            - key: k8s:io.kubernetes.pod.namespace
+              operator: In
+              values: [apps]
+            - key: app.kubernetes.io/name
+              operator: In
+              values: [invoice-service, chain-watcher, rate-service, webhook-service]
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: istio-system
+            app.kubernetes.io/name: envoy-rls
+      toPorts:
+        - ports:
+            - port: "6379"
+              protocol: TCP
+---
+# ClickHouse: read-only reports of reporting-service; the Kafka engine reads from kafka.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: clickhouse
+  namespace: data
+spec:
+  endpointSelector:
+    matchLabels:
+      clickhouse.altinity.com/chi: weigate
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: apps
+            app.kubernetes.io/name: reporting-service
+      toPorts:
+        - ports:
+            - port: "8123"
+              protocol: TCP
+            - port: "9000"
+              protocol: TCP
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kafka
+            strimzi.io/cluster: weigate
+            strimzi.io/broker-role: "true"
+      toPorts:
+        - ports:
+            - port: "9092"
+              protocol: TCP
+---
+# Garage: Tempo keeps traces in the bucket tempo-traces.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: garage
+  namespace: data
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: garage
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: observability
+            app.kubernetes.io/name: tempo
+      toPorts:
+        - ports:
+            - port: "3900"
+              protocol: TCP
