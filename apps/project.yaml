@@ -1,7 +1,7 @@
 # Project for all platform and service Applications. Wave -1: exists before any Application that uses it.
 # Wave plan for child Applications:
-#   0 local-path-provisioner | 1 operators (strimzi, cnpg, percona, cert-manager), gateway-api-crds, istio-base
-#   2 operator CRs (kafka, clusters, mongodb, cert-manager issuers), istiod, istio-cni
+#   0 local-path-provisioner | 1 operators (strimzi, cnpg, percona, cert-manager, openbao, external-secrets), gateway-api-crds, istio-base
+#   2 operator CRs (kafka, clusters, mongodb, cert-manager issuers, openbao-store), istiod, istio-cni
 #   3 valkey, anvil, rate-mock, payer-sim, istio-gateway, istio-mesh | 4 merchant-service, invoice-service, chain-watcher, rate-service
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
@@ -22,6 +22,8 @@ spec:
     - https://charts.jetstack.io
     - https://istio-release.storage.googleapis.com/charts
     - https://github.com/kubernetes-sigs/gateway-api
+    - https://openbao.github.io/openbao-helm
+    - https://charts.external-secrets.io
   destinations:
     - server: https://kubernetes.default.svc
       namespace: argocd
@@ -33,6 +35,8 @@ spec:
       namespace: data
     - server: https://kubernetes.default.svc
       namespace: chain
+    - server: https://kubernetes.default.svc
+      namespace: secrets
     - server: https://kubernetes.default.svc
       namespace: apps
     - server: https://kubernetes.default.svc
@@ -62,3 +66,5 @@ spec:
       kind: ValidatingAdmissionPolicyBinding
     - group: cert-manager.io
       kind: ClusterIssuer
+    - group: external-secrets.io
+      kind: ClusterSecretStore

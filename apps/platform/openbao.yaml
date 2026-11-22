@@ -1,0 +1,39 @@
+# Wave 1: OpenBao, standalone with data on a PV; init and unseal are manual (SRS INF-2.4). Chart openbao 0.30.8.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: openbao
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: weigate
+  sources:
+    - repoURL: https://openbao.github.io/openbao-helm
+      chart: openbao
+      targetRevision: 0.30.8
+      helm:
+        releaseName: openbao
+        valueFiles:
+          - $values/platform/openbao/values.yaml
+    - repoURL: https://github.com/m5tshift/weigate-gitops
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: secrets
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
