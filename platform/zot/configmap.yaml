@@ -1,0 +1,53 @@
+# Pull-through cache (SRS INF-1.4, CI-5.3): each upstream sits under its own path /v2/<host>/..., because Zot
+# serves one upstream per path prefix. Talos requests it that way (overridePath in the full-stand patch).
+# compat docker2s2: the upstreams return Docker manifest types.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zot-config
+data:
+  config.json: |
+    {
+      "distSpecVersion": "1.1.1",
+      "storage": {"rootDirectory": "/var/lib/zot"},
+      "http": {
+        "address": "0.0.0.0",
+        "port": "5000",
+        "compat": ["docker2s2"],
+        "accessControl": {
+          "repositories": {"**": {"anonymousPolicy": ["read"]}}
+        }
+      },
+      "log": {"level": "info"},
+      "extensions": {
+        "sync": {
+          "enable": true,
+          "registries": [
+            {
+              "urls": ["https://registry-1.docker.io"],
+              "onDemand": true,
+              "tlsVerify": true,
+              "content": [{"prefix": "**", "destination": "/docker.io", "stripPrefix": true}]
+            },
+            {
+              "urls": ["https://ghcr.io"],
+              "onDemand": true,
+              "tlsVerify": true,
+              "content": [{"prefix": "**", "destination": "/ghcr.io", "stripPrefix": true}]
+            },
+            {
+              "urls": ["https://quay.io"],
+              "onDemand": true,
+              "tlsVerify": true,
+              "content": [{"prefix": "**", "destination": "/quay.io", "stripPrefix": true}]
+            },
+            {
+              "urls": ["https://registry.k8s.io"],
+              "onDemand": true,
+              "tlsVerify": true,
+              "content": [{"prefix": "**", "destination": "/registry.k8s.io", "stripPrefix": true}]
+            }
+          ]
+        }
+      }
+    }
