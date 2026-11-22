@@ -1,0 +1,32 @@
+# ledger-service database (SRS 4.1.6): full stand only. Services: ledger-pg-rw.data.svc:5432.
+# initdb generates the owner password; the OpenBao static role ledger-service rotates it (SRS INF-2.4).
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: ledger-pg
+  namespace: data
+spec:
+  instances: 2
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.12-minimal-bookworm@sha256:f63e6d16c4e452e63477b437b70568e1e59b2c636ba3831530022e45d1398941
+  bootstrap:
+    initdb:
+      database: ledger
+      owner: ledger-service
+  managed:
+    roles:
+      - name: vault-admin
+        ensure: present
+        login: true
+        createrole: true
+        passwordSecret:
+          name: ledger-pg-vault-admin
+  storage:
+    storageClass: local-path
+    size: 5Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 192Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
