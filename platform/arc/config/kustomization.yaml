@@ -1,0 +1,8 @@
+# GitHub credentials and network policy of the CI runners (SRS CI-5.1, 4.1.11). Not synced on the minimal stand (SRS 6.4):
+# there is no Cilium and no OpenBao yet. Moves to apps/platform with m5tshift/weigate#183.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: ci
+resources:
+  - externalsecret.yaml
+  - policies.yaml

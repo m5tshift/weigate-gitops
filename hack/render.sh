@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Renders the Istio and observability charts with the values of this repository and the kustomizations of
+# Renders the ARC charts and kustomization (platform/arc), the Istio and observability charts with the values of this repository and the kustomizations of
 # platform/istio/mesh, platform/observability/config and both CNPG and both MongoDB profiles, platform/clickhouse/full, the operator chart of platform/clickhouse, and validates the result with kubeconform.
 # Chart, version and values files come from the Applications.
 # Usage: hack/render.sh   (needs helm, kubectl, kubeconform and yq v4; network access to the chart repositories)
@@ -88,5 +88,43 @@ bad=$(yq -N 'select(.kind == "ClickHouseInstallation") | .spec.templates.podTemp
 [ "$(yq -N 'select(.kind == "Secret") | .kind' "$out/clickhouse-full.yaml" | sed '/^$/d' | wc -l)" -eq 0 ] || { echo "render: clickhouse-full: Secret in the profile"; fail=1; }
 ddl=$(yq -N 'select(.kind == "ConfigMap") | .data | keys | join(" ")' "$out/clickhouse-full.yaml" | sed '/^$/d')
 [ "$ddl" = "01-database.sql 02-invoice-events.sql 03-chain-transfers.sql 04-rate-ticks.sql 05-reports.sql" ] || { echo "render: clickhouse-full: ddl files: $ddl"; fail=1; }
+
+# ARC: no Application reads platform/arc yet (SRS 6.4), so both charts are rendered from the Applications in platform/arc/apps
+# (OCI chart, version, values). Runners start from zero, are limited, have requests and limits, no Secret, no privileged container;
+# the runner network policy allows exactly the hosts of SRS 4.1.11 (plus *.blob.core.windows.net, where GitHub keeps logs and artifacts).
+for app in platform/arc/apps/arc-controller.yaml platform/arc/apps/arc-runners.yaml; do
+  name=$(yq eval '.metadata.name' "$app")
+  chart=$(yq eval '.spec.sources[] | select(.chart != null) | .chart' "$app")
+  repo=$(yq eval '.spec.sources[] | select(.chart != null) | .repoURL' "$app")
+  version=$(yq eval '.spec.sources[] | select(.chart != null) | .targetRevision' "$app")
+  vf=$(yq eval '.spec.sources[] | select(.chart != null) | .helm.valueFiles[0]' "$app")
+  if helm template "$name" "oci://$repo/$chart" --version "$version" --namespace ci -f "${vf#\$values/}" >"$out/$name.yaml"; then
+    check "$name" "$out/$name.yaml"
+  else
+    echo "render: $name: helm template failed"; fail=1
+  fi
+done
+kubectl kustomize platform/arc/config >"$out/arc-config.yaml" && check arc-config "$out/arc-config.yaml" \
+  || { echo "render: arc-config: kustomize failed"; fail=1; }
+for f in arc-controller arc-runners; do
+  bad=$(yq -N 'select(.kind == "Deployment" or .kind == "AutoscalingRunnerSet") | (.spec.template.spec.containers[], .spec.listenerTemplate.spec.containers[]?) | select(.resources.limits.memory == null or .resources.requests.memory == null) | .name' "$out/$f.yaml" | sed '/^$/d')
+  [ -z "$bad" ] || { echo "render: $f: no requests or limits: $bad"; fail=1; }
+done
+got=$(yq -N 'select(.kind == "AutoscalingRunnerSet") | [.spec.minRunners, .spec.maxRunners] | join(" ")' "$out/arc-runners.yaml" | sed '/^$/d')
+[ "$got" = "0 2" ] || { echo "render: arc-runners: want minRunners 0 and maxRunners 2: $got"; fail=1; }
+got=$(yq -N 'select(.kind == "AutoscalingRunnerSet") | .spec.template.spec.containers[].name' "$out/arc-runners.yaml" | sed '/^$/d' | tr '\n' ' ')
+[ "$got" = "runner buildkitd " ] || { echo "render: arc-runners: containers '$got'"; fail=1; }
+bad=$(yq -N 'select(.kind == "AutoscalingRunnerSet") | .spec.template.spec.containers[] | select(.securityContext.privileged == true or .securityContext.allowPrivilegeEscalation != false) | .name' "$out/arc-runners.yaml" | sed '/^$/d')
+[ -z "$bad" ] || { echo "render: arc-runners: privileged or privilege escalation: $bad"; fail=1; }
+grep -q 'buildkit:.*-rootless@sha256:' "$out/arc-runners.yaml" || { echo "render: arc-runners: buildkitd is not a rootless image pinned by digest"; fail=1; }
+[ "$(yq -N 'select(.kind == "AutoscalingRunnerSet") | .spec.template.spec.automountServiceAccountToken' "$out/arc-runners.yaml" | sed '/^$/d')" = false ] \
+  || { echo "render: arc-runners: runner pod mounts a service account token"; fail=1; }
+[ "$(yq -N 'select(.kind == "Secret") | .kind' "$out/arc-controller.yaml" "$out/arc-runners.yaml" "$out/arc-config.yaml" | sed '/^$/d' | wc -l)" -eq 0 ] \
+  || { echo "render: arc: Secret in the manifests"; fail=1; }
+got=$(yq -N 'select(.kind == "CiliumNetworkPolicy" and .metadata.name == "runners") | .spec.egress[].toFQDNs[]? | .matchName // .matchPattern' "$out/arc-config.yaml" | sed '/^$/d' | sort | tr '\n' ' ')
+want="*.actions.githubusercontent.com *.blob.core.windows.net api.github.com codeload.github.com github.com objects.githubusercontent.com proxy.golang.org sum.golang.org "
+[ "$got" = "$want" ] || { echo "render: arc-config: runners toFQDNs '$got'"; fail=1; }
+[ "$(yq -N 'select(.kind == "ExternalSecret") | .spec.dataFrom[0].extract.key' "$out/arc-config.yaml" | sed '/^$/d')" = "ci/github" ] \
+  || { echo "render: arc-config: ExternalSecret must read ci/github"; fail=1; }
 
 exit "$fail"

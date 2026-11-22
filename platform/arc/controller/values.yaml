@@ -1,0 +1,14 @@
+# Actions Runner Controller, chart gha-runner-scale-set-controller 0.15.1 (SRS CI-5.1).
+# Not synced on the minimal stand (SRS 6.4): no Application reads platform/arc yet. The Applications are in platform/arc/apps
+# and move to apps/platform together with the move to the full stand (m5tshift/weigate#183).
+# The controller runs in ci: the bootstrap layer creates no other namespace for it.
+replicaCount: 1
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+flags:
+  logLevel: info

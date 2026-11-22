@@ -1,0 +1,81 @@
+# Runner scale set, chart gha-runner-scale-set 0.15.1 (SRS CI-5.1, CI-5.2, 4.1.11). Not synced on the minimal stand (SRS 6.4),
+# see platform/arc/controller/values.yaml.
+# Ephemeral runners from zero, one pod per job, no rights on the cluster, BuildKit rootless as a sidecar:
+# a workflow builds with buildctl against unix:///run/buildkit/buildkitd.sock.
+# Credentials: Secret arc-github from the ExternalSecret in platform/arc/config (OpenBao ci/github, field github_token).
+githubConfigUrl: https://github.com/m5tshift/weigate
+githubConfigSecret: arc-github
+runnerScaleSetName: arc-runners
+# Named explicitly: the chart would look the controller up in the cluster, and Argo CD renders without cluster access.
+controllerServiceAccount:
+  name: arc-controller-gha-rs-controller
+  namespace: ci
+minRunners: 0
+maxRunners: 2
+listenerTemplate:
+  spec:
+    containers:
+      - name: listener
+        resources:
+          requests:
+            cpu: 25m
+            memory: 48Mi
+          limits:
+            cpu: 100m
+            memory: 96Mi
+template:
+  spec:
+    automountServiceAccountToken: false
+    securityContext:
+      fsGroup: 1001
+    containers:
+      - name: runner
+        image: ghcr.io/actions/actions-runner:2.338.2
+        command: ["/home/runner/run.sh"]
+        env:
+          - name: BUILDKIT_HOST
+            value: unix:///run/buildkit/buildkitd.sock
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: [ALL]
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: "1"
+            memory: 1Gi
+        volumeMounts:
+          - name: buildkit-socket
+            mountPath: /run/buildkit
+      - name: buildkitd
+        image: moby/buildkit:v0.35.1-rootless@sha256:7d02292556e66feea6d2d89b7ec143503b57e4f59a4efc6b7ece8547e4d3e5be
+        args:
+          - --oci-worker-no-process-sandbox
+          - --addr=unix:///run/buildkit/buildkitd.sock
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          allowPrivilegeEscalation: false
+          seccompProfile:
+            type: Unconfined
+          appArmorProfile:
+            type: Unconfined
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: "1"
+            memory: 1Gi
+        volumeMounts:
+          - name: buildkit-socket
+            mountPath: /run/buildkit
+          - name: buildkit-state
+            mountPath: /home/user/.local/share/buildkit
+    volumes:
+      - name: buildkit-socket
+        emptyDir: {}
+      - name: buildkit-state
+        emptyDir: {}

@@ -31,6 +31,7 @@ spec:
     - https://victoriametrics.github.io/helm-charts
     - https://grafana-community.github.io/helm-charts
     - https://open-telemetry.github.io/opentelemetry-helm-charts
+    - ghcr.io/actions/actions-runner-controller-charts
   destinations:
     - server: https://kubernetes.default.svc
       namespace: argocd
@@ -52,6 +53,8 @@ spec:
       namespace: istio-system
     - server: https://kubernetes.default.svc
       namespace: observability
+    - server: https://kubernetes.default.svc
+      namespace: ci
     # istio-cni and the OTel Collector: their DaemonSets with hostPath need the Pod Security exemption Talos gives kube-system.
     - server: https://kubernetes.default.svc
       namespace: kube-system
