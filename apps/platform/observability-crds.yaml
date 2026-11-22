@@ -1,0 +1,39 @@
+# Wave 1: CRDs ServiceMonitor and PodMonitor read by the OTel Target Allocator (SRS 4.5.1). Chart prometheus-operator-crds 33.0.2;
+# no operator and no pods.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observability-crds
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: weigate
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: prometheus-operator-crds
+      targetRevision: 33.0.2
+      helm:
+        releaseName: prometheus-operator-crds
+        valueFiles:
+          - $values/platform/observability/crds/values.yaml
+    - repoURL: https://github.com/m5tshift/weigate-gitops
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

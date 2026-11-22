@@ -1,0 +1,40 @@
+# Values for the grafana chart (SRS 4.5.2, 6.2). Access: kubectl -n observability port-forward svc/grafana 3000:80.
+# Admin credentials come from Secret grafana-admin (config/externalsecrets.yaml); dashboards are provisioned separately.
+admin:
+  existingSecret: grafana-admin
+  userKey: admin-user
+  passwordKey: admin-password
+testFramework:
+  enabled: false
+plugins:
+  - victoriametrics-logs-datasource
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: VictoriaMetrics
+        uid: victoriametrics
+        type: prometheus
+        access: proxy
+        url: http://victoria-metrics:8428
+        isDefault: true
+      - name: VictoriaLogs
+        uid: victorialogs
+        type: victoriametrics-logs-datasource
+        access: proxy
+        url: http://victoria-logs:9428
+      - name: Tempo
+        uid: tempo
+        type: tempo
+        access: proxy
+        url: http://tempo:3200
+        jsonData:
+          tracesToLogsV2:
+            datasourceUid: victorialogs
+resources:
+  requests:
+    cpu: 50m
+    memory: 96Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi

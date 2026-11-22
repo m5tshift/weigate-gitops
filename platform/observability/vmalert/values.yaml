@@ -1,0 +1,32 @@
+# Values for victoria-metrics-alert (SRS 4.5.2, 4.5.4, 6.2): vmalert evaluates rules on VictoriaMetrics and sends
+# alerts to Alertmanager. Alertmanager reads alertmanager.yaml from Secret alertmanager-config, rendered by ESO from
+# OpenBao (config/externalsecrets.yaml): the only receiver is Telegram. The rule groups are filled by the alerts task.
+server:
+  fullnameOverride: vmalert
+  datasource:
+    url: http://victoria-metrics:8428
+  remoteWrite:
+    url: http://victoria-metrics:8428
+  remoteRead:
+    url: http://victoria-metrics:8428
+  config:
+    alerts:
+      groups: []
+  resources:
+    requests:
+      cpu: 20m
+      memory: 48Mi
+    limits:
+      cpu: 250m
+      memory: 96Mi
+alertmanager:
+  enabled: true
+  fullnameOverride: alertmanager
+  configSecret: alertmanager-config
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi

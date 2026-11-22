@@ -1,0 +1,2 @@
+# Values for prometheus-operator-crds: only CRDs, no pods.
+{}

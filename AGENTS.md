@@ -52,8 +52,9 @@ services/<component>/values.yaml   values чарта из Zot: сервисы, m
 - `make lint` — yamllint (`.yamllint.yaml`).
 - `make validate` — kubeconform для манифестов в `apps/` и `platform/` (values-файлы пропускаются),
   схемы CRD из закреплённого коммита datreeio/CRDs-catalog.
-- `make render` — `helm template` чартов Istio с values из `platform/istio/` (чарт, версия и values берутся
-  из Application) и `kubectl kustomize platform/istio/mesh`; результат проверяет kubeconform.
+- `make render` — `helm template` чартов Istio и наблюдаемости с values из `platform/istio/` и
+  `platform/observability/` (чарт, версия и values берутся из Application), `kubectl kustomize` для
+  `platform/istio/mesh` и `platform/observability/config`; результат проверяет kubeconform.
 - `make template` — `helm template` чарта каждого компонента из `services/` с его values: чарт берётся
   из клона `weigate` (`WEIGATE_DIR`, по умолчанию `../weigate`), результат проверяют kubeconform и правила
   минимального стенда (1 реплика, без PDB, VirtualService и DestinationRule, ExternalSecret и экспорта OTel, есть requests и limits).

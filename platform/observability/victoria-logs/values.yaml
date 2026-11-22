@@ -1,0 +1,14 @@
+# Values for victoria-logs-single (SRS 4.5.2, 6.2). Service victoria-logs.observability:9428; the OTel Collector
+# writes over OTLP to /insert/opentelemetry.
+server:
+  fullnameOverride: victoria-logs
+  retentionPeriod: 3d
+  persistentVolume:
+    size: 10Gi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 96Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi

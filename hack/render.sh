@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Renders the Istio charts with the values of this repository and the kustomization of platform/istio/mesh,
-# and validates the result with kubeconform. Chart, version and values files come from the Applications.
+# Renders the Istio and observability charts with the values of this repository and the kustomizations of
+# platform/istio/mesh and platform/observability/config, and validates the result with kubeconform.
+# Chart, version and values files come from the Applications.
 # Usage: hack/render.sh   (needs helm, kubectl, kubeconform and yq v4; network access to the chart repositories)
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -19,7 +20,7 @@ check() { # check <name> <manifest>
   fi
 }
 
-for app in apps/platform/istio*.yaml; do
+for app in apps/platform/istio*.yaml apps/platform/observability*.yaml; do
   name=$(yq eval '.metadata.name' "$app")
   chart=$(yq eval '.spec.sources[]? | select(.chart != null) | .chart' "$app")
   [ -n "$chart" ] || continue
@@ -39,10 +40,13 @@ for app in apps/platform/istio*.yaml; do
   fi
 done
 
-if kubectl kustomize platform/istio/mesh >"$out/istio-mesh.yaml"; then
-  check istio-mesh "$out/istio-mesh.yaml"
-else
-  echo "render: istio-mesh: kustomize failed"; fail=1
-fi
+for dir in platform/istio/mesh platform/observability/config; do
+  name=$(echo "${dir#platform/}" | tr / -)
+  if kubectl kustomize "$dir" >"$out/$name.yaml"; then
+    check "$name" "$out/$name.yaml"
+  else
+    echo "render: $name: kustomize failed"; fail=1
+  fi
+done
 
 exit "$fail"

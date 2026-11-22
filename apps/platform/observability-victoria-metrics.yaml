@@ -1,0 +1,38 @@
+# Wave 3: VictoriaMetrics single node, metrics storage (SRS 4.5.2). Chart victoria-metrics-single 0.51.0.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observability-victoria-metrics
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: weigate
+  sources:
+    - repoURL: https://victoriametrics.github.io/helm-charts
+      chart: victoria-metrics-single
+      targetRevision: 0.51.0
+      helm:
+        releaseName: victoria-metrics
+        valueFiles:
+          - $values/platform/observability/victoria-metrics/values.yaml
+    - repoURL: https://github.com/m5tshift/weigate-gitops
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

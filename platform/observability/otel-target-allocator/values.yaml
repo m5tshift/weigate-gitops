@@ -1,0 +1,21 @@
+# Values for opentelemetry-target-allocator (SRS 4.5.1, 6.2): reads every ServiceMonitor and PodMonitor and gives each
+# collector of the otel-collector DaemonSet the targets on its own node.
+fullnameOverride: otel-target-allocator
+targetAllocator:
+  config:
+    allocation_strategy: per-node
+    collector_selector:
+      matchlabels:
+        app.kubernetes.io/instance: otel-collector
+    prometheus_cr:
+      enabled: true
+      scrapeInterval: 30s
+      service_monitor_selector: {}
+      pod_monitor_selector: {}
+  resources:
+    requests:
+      cpu: 20m
+      memory: 48Mi
+    limits:
+      cpu: 250m
+      memory: 96Mi
