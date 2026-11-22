@@ -6,6 +6,7 @@
 #   3 valkey, anvil, rate-mock, merchant-mock, payer-sim, istio-gateway, istio-mesh, observability storage (victoria-metrics, victoria-logs),
 #     kube-state-metrics, observability-config
 #   4 merchant-service, invoice-service, chain-watcher, rate-service, tempo, grafana, vmalert, otel-target-allocator, otel-collector
+#   4 ledger-service, webhook-service; 5 reconciliation-service (full stand, services/<component>/application.yaml)
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
@@ -34,6 +35,8 @@ spec:
     - ghcr.io/actions/actions-runner-controller-charts
     - https://github.com/kubernetes-sigs/karpenter
     - https://kwok.sigs.k8s.io/charts/
+    # OCI charts of the Weigate components in Zot (SRS CI-5.3), the full stand.
+    - zot.registry.svc:5000/weigate/charts
   destinations:
     - server: https://kubernetes.default.svc
       namespace: argocd

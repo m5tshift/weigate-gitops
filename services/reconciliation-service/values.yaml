@@ -1,0 +1,92 @@
+# reconciliation-service on the full stand (SRS 6.2, 6.3); merged over charts/reconciliation-service/values.yaml of
+# weigate. Not synced yet: services/reconciliation-service/application.yaml moves to apps/services with
+# m5tshift/weigate#183.
+image:
+  repository: ghcr.io/m5tshift/weigate/reconciliation-service
+  # Updated by CI of weigate after the image build; not edited by hand.
+  tag: "edbc526"
+
+# SRS 6.2: one replica of reconciliation-service is part of the memory budget; a PDB of one replica would block
+# a drain. The replica takes the Lease and runs the reconciliation (SRS 4.1.3).
+replicaCount: 1
+pdb:
+  enabled: false
+leader:
+  enabled: true
+
+# Sidecar in every pod of apps (SRS 4.1.10): with mTLS STRICT a pod without it can neither call nor be called.
+podLabels:
+  sidecar.istio.io/inject: "true"
+
+# The istio agent merges /metrics of the app into :15020/stats/prometheus, which the OTel Collector scrapes outside
+# mTLS STRICT (platform/observability/config/monitors.yaml, SRS 4.5.1).
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: /metrics
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 128Mi
+
+# Traces go to the OTel Collector over OTLP/HTTP; metrics are scraped from /metrics (the collector drops OTLP metrics).
+telemetry:
+  otlpEndpoint: "http://otel-collector.kube-system:4318"
+  traceSampleRatio: 0.5
+
+kafka:
+  enabled: true
+  brokers:
+    - weigate-kafka-bootstrap.kafka.svc:9092
+
+# Password of the MongoDB user reconciliation-service: the same OpenBao field mongodb/users the full MongoDB profile
+# creates the user from (platform/percona-mongodb/full).
+secrets:
+  - name: mongodb
+    externalSecret:
+      enabled: true
+      data:
+        - secretKey: password
+          remoteRef:
+            key: mongodb/users
+            property: reconciliation-service
+
+# PerconaServerMongoDB mongodb in data, replica set rs0; reports and the projection of invoice.events (SRS 4.1.8).
+mongodb:
+  enabled: true
+  uri: mongodb://mongodb-rs0.data.svc:27017/?replicaSet=rs0
+  username: reconciliation-service
+  database: reconciliation
+  authSource: reconciliation
+  password:
+    secret: mongodb
+    key: password
+
+env:
+  KAFKA_CONSUMER_GROUP: reconciliation-service
+  # Anvil in chain; the same chain and N as chain-watcher and invoice-service.
+  NODE_URL: http://anvil.chain.svc:8545
+  CHAIN_ID: "31337"
+  CONFIRMATIONS: "7"
+  NODE_TIMEOUT: 5s
+  NODE_BREAKER_FAILURE_THRESHOLD: "5"
+  NODE_BREAKER_OPEN_TIMEOUT: 15s
+  NODE_BREAKER_HALF_OPEN_MAX: "1"
+  RPC_BATCH_SIZE: "100"
+  # Timeout, retry and outlier detection of this call are in the mesh resources of ledger-service
+  # (services/ledger-service/values.yaml, SRS 4.1.9); a failed call postpones the run to the next one.
+  LEDGER_URL: http://ledger-service.apps.svc:8080
+  LEDGER_TIMEOUT: 2s
+  # UC-08: every 10 minutes, the addresses of the last 7 days; SRS 4.1.4: tracking window 24 h.
+  RUN_INTERVAL: 10m
+  RUN_TIMEOUT: 5m
+  SETTLE_DELAY: 15s
+  ADDRESS_LOOKBACK: 168h
+  TRACKING_WINDOW: 24h
+  PROJECTION_TTL: 192h
+  REPORT_TTL: 720h
+  LOG_LEVEL: info

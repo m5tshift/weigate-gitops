@@ -17,6 +17,9 @@ platform/<component>/    values и манифесты: local-path-provisioner, c
                          network-policies
 platform/strimzi/        оператор и CR Kafka, целиком сгенерированы Ansible-ролью из weigate
 services/<component>/values.yaml   values чарта из Zot: сервисы, merchant-mock, rate-mock, payer-sim
+services/<component>/values-full.yaml  оверлей полного стенда поверх values.yaml (компоненты минимального стенда)
+services/<component>/application.yaml  Application компонента только полного стенда, чарт из Zot; не синхронизируется,
+                                       переносится в apps/services при переходе на полный стенд (m5tshift/weigate#183)
 ```
 
 ## Правила
@@ -56,8 +59,12 @@ services/<component>/values.yaml   values чарта из Zot: сервисы, m
   `platform/observability/` (чарт, версия и values берутся из Application), `kubectl kustomize` для
   `platform/istio/mesh` и `platform/observability/config`; результат проверяет kubeconform.
 - `make template` — `helm template` чарта каждого компонента из `services/` с его values: чарт берётся
-  из клона `weigate` (`WEIGATE_DIR`, по умолчанию `../weigate`), результат проверяют kubeconform и правила
-  минимального стенда (1 реплика, без PDB, VirtualService и DestinationRule, ExternalSecret и экспорта OTel, есть requests и limits).
+  из клона `weigate` (`WEIGATE_DIR`, по умолчанию `../weigate`), результат проверяет kubeconform (со схемами CRD).
+  Компонент с Application в `apps/services/` проверяется по правилам минимального стенда (1 реплика, без PDB,
+  VirtualService и DestinationRule, ExternalSecret, есть экспорт OTel, requests и limits), его `values-full.yaml` —
+  поверх `values.yaml`: requests и limits, Istio по SRS 4.1.9 без fault injection. Компонент с
+  `services/<c>/application.yaml` — по правилам полного стенда: чарт из Zot, ≥ 2 реплики и PDB (1 реплика без PDB
+  у `reconciliation-service` и `reporting-service`, SRS 6.2), каждый смонтированный Secret — из ExternalSecret.
 - `make ddl` — DDL из `platform/clickhouse/full/ddl/` на ClickHouse в контейнере (нужен docker): два прогона подряд,
   витрины на тестовых строках в целевых таблицах.
 - `make dashboards` — дашборды Grafana из `platform/observability/config/dashboards/`: валидный JSON, метрики

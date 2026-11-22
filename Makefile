@@ -21,7 +21,7 @@ render:
 # Charts of services/ from a checkout of weigate rendered with the stand values (hack/template.sh).
 WEIGATE_DIR ?= ../weigate
 template:
-	WEIGATE_DIR=$(WEIGATE_DIR) hack/template.sh
+	CRD_SCHEMAS='$(CRD_SCHEMAS)' WEIGATE_DIR=$(WEIGATE_DIR) hack/template.sh
 
 # vmalert -dryRun of the rules of platform/observability/vmalert (hack/alerts.sh).
 alerts:

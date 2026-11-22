@@ -1,0 +1,40 @@
+# Wave 4: ledger-service, double-entry ledger and statements (SRS 4.1.3); after ledger-pg and Kafka (wave 2).
+# Full stand (SRS 6.3): the chart comes from Zot (SRS CI-5.3), values from here. Not synced: root reads only apps/;
+# this file moves to apps/services with m5tshift/weigate#183, together with the stores and users it needs.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ledger-service
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: weigate
+  sources:
+    - repoURL: zot.registry.svc:5000/weigate/charts
+      chart: ledger-service
+      targetRevision: 0.1.2
+      helm:
+        releaseName: ledger-service
+        valueFiles:
+          - $values/services/ledger-service/values.yaml
+    - repoURL: https://github.com/m5tshift/weigate-gitops
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: apps
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

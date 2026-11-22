@@ -1,0 +1,82 @@
+# ledger-service on the full stand (SRS 6.2, 6.3); merged over charts/ledger-service/values.yaml of weigate.
+# Not synced yet: services/ledger-service/application.yaml moves to apps/services with m5tshift/weigate#183.
+image:
+  repository: ghcr.io/m5tshift/weigate/ledger-service
+  # Updated by CI of weigate after the image build; not edited by hand.
+  tag: "edbc526"
+
+# SRS 6.3: two replicas, one may be drained at a time.
+replicaCount: 2
+pdb:
+  enabled: true
+  minAvailable: 1
+
+# Sidecar in every pod of apps (SRS 4.1.10): with mTLS STRICT a pod without it can neither call nor be called.
+podLabels:
+  sidecar.istio.io/inject: "true"
+
+# The istio agent merges /metrics of the app into :15020/stats/prometheus, which the OTel Collector scrapes outside
+# mTLS STRICT (platform/observability/config/monitors.yaml, SRS 4.5.1).
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: /metrics
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 128Mi
+
+# Traces go to the OTel Collector over OTLP/HTTP; metrics are scraped from /metrics (the collector drops OTLP metrics).
+telemetry:
+  otlpEndpoint: "http://otel-collector.kube-system:4318"
+  traceSampleRatio: 0.5
+
+kafka:
+  enabled: true
+  brokers:
+    - weigate-kafka-bootstrap.kafka.svc:9092
+
+# Password of the owner ledger-service of ledger-pg: the static role ledger-service of the OpenBao database engine
+# rotates it (SRS INF-2.4); the ClusterSecretStore openbao-database reads database/static-creds.
+secrets:
+  - name: postgres
+    externalSecret:
+      enabled: true
+      secretStore:
+        kind: ClusterSecretStore
+        name: openbao-database
+      data:
+        - secretKey: password
+          remoteRef:
+            key: static-creds/ledger-service
+            property: password
+
+postgres:
+  enabled: true
+  url: postgres://ledger-service@ledger-pg-rw.data.svc:5432/ledger
+  password:
+    secret: postgres
+    key: password
+
+# SRS 4.1.9: reconciliation-service -> ledger-service, outlier detection, timeout 2 s, one retry; no fault injection.
+istio:
+  destinationRule:
+    enabled: true
+  virtualService:
+    enabled: true
+    timeout: 2s
+    retries:
+      attempts: 1
+      perTryTimeout: 2s
+    fault:
+      enabled: false
+
+env:
+  KAFKA_CONSUMER_GROUP: ledger-service
+  # SRS 4.1.3: platform fee 0.5 % of every receipt, in basis points.
+  FEE_BPS: "50"
+  LOG_LEVEL: info
