@@ -1,0 +1,14 @@
+# Full stand overlay of merchant-service (SRS 4.1.10, INF-2.4), applied over values.yaml; the minimal stand uses
+# values.yaml alone. The Application switches to values.yaml + values-full.yaml with m5tshift/weigate#183, after
+# OpenBao is initialized (m5tshift/weigate#64).
+
+# Webhook secrets go to OpenBao KV v2 webhook/<merchantId> (without OPENBAO_ADDR the rotation endpoint answers 501),
+# JWTs are signed by Transit key merchant-jwt. The chart then drops the secret jwt-signing and JWT_SIGNING_KEY_FILE
+# of values.yaml (openbao.omitSecrets, openbao.omitEnv). API key rotation is configured in values.yaml.
+openbao:
+  enabled: true
+  addr: http://openbao.secrets.svc:8200
+  role: merchant-service
+  env:
+    JWT_TRANSIT_KEY: merchant-jwt
+    OPENBAO_KV_MOUNT: secret

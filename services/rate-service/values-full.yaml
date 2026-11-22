@@ -1,0 +1,20 @@
+# Full stand overlay of rate-service (SRS 4.1.9, 6.3), applied over values.yaml; the minimal stand uses values.yaml
+# alone. The Application switches to values.yaml + values-full.yaml with m5tshift/weigate#183.
+
+# invoice-service -> rate-service (SRS 4.1.9): outlier detection, timeout 500 ms, one retry; no fault injection.
+# rate-service answers 503 on purpose when the sources diverge or the rate is stale (SRS 4.1.3), so a 5xx answer does
+# not eject a pod: only gateway errors (502, 503 and 504 of the proxy, connection failures) count.
+istio:
+  destinationRule:
+    enabled: true
+    outlierDetection:
+      consecutive5xxErrors: 0
+      consecutiveGatewayErrors: 5
+  virtualService:
+    enabled: true
+    timeout: 500ms
+    retries:
+      attempts: 1
+      perTryTimeout: 500ms
+    fault:
+      enabled: false

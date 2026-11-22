@@ -1,0 +1,105 @@
+# webhook-service on the full stand (SRS 6.2, 6.3); merged over charts/webhook-service/values.yaml of weigate.
+# Not synced yet: services/webhook-service/application.yaml moves to apps/services with m5tshift/weigate#183.
+image:
+  repository: ghcr.io/m5tshift/weigate/webhook-service
+  # Updated by CI of weigate after the image build; not edited by hand.
+  tag: "0c78a06"
+
+# SRS 6.3: two replicas, one may be drained at a time.
+replicaCount: 2
+pdb:
+  enabled: true
+  minAvailable: 1
+
+# Sidecar in every pod of apps (SRS 4.1.10): with mTLS STRICT a pod without it can neither call nor be called.
+podLabels:
+  sidecar.istio.io/inject: "true"
+
+# The istio agent merges /metrics of the app into :15020/stats/prometheus, which the OTel Collector scrapes outside
+# mTLS STRICT (platform/observability/config/monitors.yaml, SRS 4.5.1).
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: /metrics
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 128Mi
+
+# Traces go to the OTel Collector over OTLP/HTTP; metrics are scraped from /metrics (the collector drops OTLP metrics).
+telemetry:
+  otlpEndpoint: "http://otel-collector.kube-system:4318"
+  traceSampleRatio: 0.5
+
+kafka:
+  enabled: true
+  brokers:
+    - weigate-kafka-bootstrap.kafka.svc:9092
+
+# Passwords of the MongoDB user (OpenBao mongodb/users, as in platform/percona-mongodb/full) and of the Valkey ACL
+# user webhook-service (OpenBao valkey/users).
+secrets:
+  - name: mongodb
+    externalSecret:
+      enabled: true
+      data:
+        - secretKey: password
+          remoteRef:
+            key: mongodb/users
+            property: webhook-service
+  - name: valkey
+    externalSecret:
+      enabled: true
+      data:
+        - secretKey: password
+          remoteRef:
+            key: valkey/users
+            property: webhook-service
+
+# PerconaServerMongoDB mongodb in data, replica set rs0; delivery journal and the projection of merchant.events.
+mongodb:
+  enabled: true
+  uri: mongodb://mongodb-rs0.data.svc:27017/?replicaSet=rs0
+  username: webhook-service
+  database: webhook_service
+  authSource: webhook_service
+  password:
+    secret: mongodb
+    key: password
+
+# Deduplication by event.id (SRS 4.1.7).
+valkey:
+  enabled: true
+  addrs:
+    - valkey.data.svc:6379
+  username: webhook-service
+  password:
+    secret: valkey
+    key: password
+
+# Signing secrets from OpenBao KV v2 webhook/<merchantId> (written by merchant-service) with the Kubernetes-auth
+# role webhook-service of the Terraform layer openbao (SRS 4.1.10).
+openbao:
+  enabled: true
+  addr: http://openbao.secrets.svc:8200
+  role: webhook-service
+  env:
+    OPENBAO_KV_MOUNT: secret
+
+env:
+  KAFKA_CONSUMER_GROUP: webhook-service
+  # SRS 4.1.9, NFR-09: the breaker of an endpoint opens after 5 failures in a row for 30 s.
+  DELIVERY_TIMEOUT: 5s
+  ENDPOINT_BREAKER_FAILURE_THRESHOLD: "5"
+  ENDPOINT_BREAKER_OPEN_TIMEOUT: 30s
+  ENDPOINT_BREAKER_HALF_OPEN_MAX: "1"
+  DELIVERY_CONCURRENCY: "64"
+  # SRS 4.1.7: deduplication key 24 h; SRS 4.1.6: delivery journal 30 days.
+  DEDUP_TTL: 24h
+  JOURNAL_TTL: 720h
+  VALKEY_TIMEOUT: 100ms
+  LOG_LEVEL: info
