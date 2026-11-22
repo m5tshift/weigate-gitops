@@ -21,6 +21,12 @@ env:
 meshConfig:
   defaultConfig:
     holdApplicationUntilProxyStarts: true
+    # Envoy stats for the mesh dashboard and UpstreamEjected (SRS 4.5.3, 4.5.4); applied to a sidecar when its pod
+    # is recreated.
+    proxyStatsMatcher:
+      inclusionRegexps:
+        - ".*outlier_detection.*"
+        - ".*upstream_rq_retry.*"
   # Decoded and merged slashes before AuthorizationPolicy matches paths (no /pay%2F.. bypass).
   pathNormalization:
     normalization: DECODE_AND_MERGE_SLASHES

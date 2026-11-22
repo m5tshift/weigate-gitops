@@ -3,3 +3,16 @@ kind: Kustomization
 resources:
   - externalsecrets.yaml
   - monitors.yaml
+# Dashboards of SRS 4.5.3, provisioned by Grafana from this ConfigMap (grafana/values.yaml, dashboardsConfigMaps).
+configMapGenerator:
+  - name: grafana-dashboards
+    files:
+      - dashboards/golden-signals.json
+      - dashboards/kafka.json
+      - dashboards/gateway.json
+      - dashboards/mesh.json
+      - dashboards/chain.json
+      - dashboards/business.json
+      - dashboards/infrastructure.json
+generatorOptions:
+  disableNameSuffixHash: true
