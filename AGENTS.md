@@ -58,6 +58,8 @@ services/<component>/values.yaml   values чарта из Zot: сервисы, m
 - `make template` — `helm template` чарта каждого компонента из `services/` с его values: чарт берётся
   из клона `weigate` (`WEIGATE_DIR`, по умолчанию `../weigate`), результат проверяют kubeconform и правила
   минимального стенда (1 реплика, без PDB, VirtualService и DestinationRule, ExternalSecret и экспорта OTel, есть requests и limits).
+- `make dashboards` — дашборды Grafana из `platform/observability/config/dashboards/`: валидный JSON, метрики
+  запросов есть в коде `weigate` (`WEIGATE_DIR`) или у известного экспортера.
 - `make policy` — правила из этого файла, видимые по тексту: нет `Namespace`, `CreateNamespace=true`,
   `Secret`, Bitnami; у каждого `Application` есть `argocd.argoproj.io/sync-wave`.
 - `make test-policy` — проверка `policy` на фикстурах из `test/policy/`.

@@ -1,5 +1,6 @@
 # Values for the grafana chart (SRS 4.5.2, 6.2). Access: kubectl -n observability port-forward svc/grafana 3000:80.
-# Admin credentials come from Secret grafana-admin (config/externalsecrets.yaml); dashboards are provisioned separately.
+# Admin credentials come from Secret grafana-admin (config/externalsecrets.yaml). Dashboards (SRS 4.5.3) are provisioned
+# from ConfigMap grafana-dashboards of config/ (wave 3, before Grafana).
 admin:
   existingSecret: grafana-admin
   userKey: admin-user
@@ -31,6 +32,19 @@ datasources:
         jsonData:
           tracesToLogsV2:
             datasourceUid: victorialogs
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: weigate
+        folder: Weigate
+        type: file
+        disableDeletion: true
+        editable: false
+        options:
+          path: /var/lib/grafana/dashboards/weigate
+dashboardsConfigMaps:
+  weigate: grafana-dashboards
 resources:
   requests:
     cpu: 50m

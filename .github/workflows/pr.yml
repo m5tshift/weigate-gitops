@@ -157,3 +157,20 @@ jobs:
           rm vmutils.tar.gz
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
       - run: make alerts
+
+  dashboards:
+    name: dashboards
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      # Metric names of the dashboards are checked against the code of the main repository.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          repository: m5tshift/weigate
+          ref: main
+          path: .weigate
+          persist-credentials: false
+      - run: make dashboards WEIGATE_DIR=.weigate

@@ -8,7 +8,9 @@ vmalert and Alertmanager in `observability`; OTel Collector (DaemonSet) and Targ
   Volume usage (`kubelet_volume_stats_*`) comes from a static kubelet scrape of the OTel Collector.
 - Metrics are scraped by the collectors from every ServiceMonitor and PodMonitor (`config/monitors.yaml`, charts).
   Pods with a sidecar are read on the merged istio agent endpoint `:15020/stats/prometheus`.
-- Grafana: `kubectl -n observability port-forward svc/grafana 3000:80`.
+- Grafana: `kubectl -n observability port-forward svc/grafana 3000:80`. Dashboards of SRS 4.5.3 (folder Weigate) are JSON
+  files in `config/dashboards/`, provisioned from ConfigMap `grafana-dashboards`; `make dashboards` checks JSON and metric
+  names. Kafka panels stay empty until the Kafka CR has JMX Exporter and Kafka Exporter; Hubble — full stand only.
 
 | Component | requests | limits |
 |---|---|---|
