@@ -1,5 +1,6 @@
 # Values for opentelemetry-collector in DaemonSet mode (SRS 4.5.1, 6.2). Services send OTLP/HTTP
-# (traces and logs; their metrics are scraped, not pushed) to otel-collector.kube-system:4318; each collector also tails the pod logs of its node and scrapes the targets
+# (traces and logs; their metrics are scraped, not pushed) to
+# otel-collector.kube-system:4318; each collector also tails the pod logs of its node and scrapes the targets
 # the Target Allocator gives it. Out: metrics to VictoriaMetrics, logs to VictoriaLogs, traces to Tempo.
 mode: daemonset
 fullnameOverride: otel-collector
@@ -73,7 +74,7 @@ config:
   service:
     pipelines:
       metrics:
-        receivers: [otlp, prometheus, prometheus/kubelet]
+        receivers: [prometheus, prometheus/kubelet]
         processors: [memory_limiter, batch]
         exporters: [prometheusremotewrite]
       logs:
