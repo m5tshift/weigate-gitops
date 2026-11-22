@@ -2,7 +2,7 @@
 image:
   repository: ghcr.io/m5tshift/weigate/chain-watcher
   # Updated by CI of weigate after the image build; not edited by hand.
-  tag: "d740392"
+  tag: "edbc526"
 
 # SRS 6.4: one replica of every component; a PDB of one replica would block the drain of the only worker.
 # The single replica takes the Lease and reads blocks (SRS 4.1.3).
