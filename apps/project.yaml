@@ -55,6 +55,8 @@ spec:
       namespace: observability
     - server: https://kubernetes.default.svc
       namespace: ci
+    - server: https://kubernetes.default.svc
+      namespace: registry
     # istio-cni and the OTel Collector: their DaemonSets with hostPath need the Pod Security exemption Talos gives kube-system.
     - server: https://kubernetes.default.svc
       namespace: kube-system
