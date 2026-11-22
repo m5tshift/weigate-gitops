@@ -1,0 +1,11 @@
+# Default-deny and explicit allows in the namespaces of applications and data (SRS 4.1.10); matrix in ../README.md.
+# Not synced on the minimal stand (SRS 6.4): there is no Cilium. Moves to apps/platform with m5tshift/weigate#183.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - apps.yaml
+  - data.yaml
+  - kafka.yaml
+  - chain.yaml
+  - secrets.yaml
+  - ci.yaml

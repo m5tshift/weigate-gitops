@@ -1,0 +1,224 @@
+# Namespace apps: services and test components, all with an Istio sidecar (SRS 4.1.10). The graph of SRS 4.1 is enforced
+# on ingress of the receiver; egress is limited to the namespaces of the graph, the mesh and telemetry.
+# Every policy that selects a pod puts it into default-deny for the directions it has rules for.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: default
+  namespace: apps
+spec:
+  endpointSelector: {}
+  ingress:
+    # Metrics: the istio agent on :15020 and the app on :8080.
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            app.kubernetes.io/name: opentelemetry-collector
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: ANY
+          rules:
+            dns:
+              - matchPattern: "*"
+    # Calls inside apps; which of them are allowed is decided by the ingress rules below.
+    - toEndpoints:
+        - {}
+    # Kafka, the own databases, Valkey, Anvil and OpenBao; checked by ingress of data, kafka, chain and secrets.
+    - toEndpoints:
+        - matchExpressions:
+            - key: k8s:io.kubernetes.pod.namespace
+              operator: In
+              values: [data, kafka, chain, secrets]
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: istio-system
+            app: istiod
+      toPorts:
+        - ports:
+            - port: "15012"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            app.kubernetes.io/name: opentelemetry-collector
+      toPorts:
+        - ports:
+            - port: "4318"
+              protocol: TCP
+---
+# Leader Lease (pkg/leader) and the login of the OpenBao token sidecar.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: kube-apiserver
+  namespace: apps
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values: [chain-watcher, rate-service, reconciliation-service, merchant-service, webhook-service]
+  egress:
+    - toEntities:
+        - kube-apiserver
+---
+# Exchanges of the exchanges mode of rate-service (SRS 4.1.3); the mock mode uses rate-mock.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: rate-service-exchanges
+  namespace: apps
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: rate-service
+  egress:
+    - toFQDNs:
+        - matchName: api.exchange.coinbase.com
+        - matchName: www.okx.com
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+---
+# Public API behind the gateway (SRS 4.1.8): merchants, invoices, ledger statements, reports.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: from-gateway
+  namespace: apps
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values: [merchant-service, invoice-service, ledger-service, reporting-service]
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: istio-system
+            istio: gateway
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
+# JWKS of merchant-service for invoice-service (SRS 4.1.2).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: merchant-service
+  namespace: apps
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: merchant-service
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: invoice-service
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
+# payer-sim fetches invoices to pay (SRS 4.1.3, test components).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: invoice-service
+  namespace: apps
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: invoice-service
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: payer-sim
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
+# Rate fixing at invoice creation (SRS 4.1.2).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: rate-service
+  namespace: apps
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: rate-service
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: invoice-service
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
+# Statement API for reconciliation (SRS 4.1.2).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: ledger-service
+  namespace: apps
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: ledger-service
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: reconciliation-service
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
+# Mock mode of rate-service (SRS 4.1.3).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: rate-mock
+  namespace: apps
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: rate-mock
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: rate-service
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
+# Webhooks to the test merchant (SRS 4.1.3).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: merchant-mock
+  namespace: apps
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: merchant-mock
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: webhook-service
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
