@@ -1,0 +1,75 @@
+# One shard, one replica, no Keeper (SRS 4.1.6, INF-1.3). Memory fits the ~4.5 GB share of PostgreSQL, MongoDB and
+# ClickHouse in the SRS 6.2 budget. Users come from the Secret clickhouse-users (OpenBao, externalsecret.yaml).
+apiVersion: clickhouse.altinity.com/v1
+kind: ClickHouseInstallation
+metadata:
+  name: weigate
+  namespace: data
+spec:
+  defaults:
+    templates:
+      podTemplate: clickhouse
+      dataVolumeClaimTemplate: data
+  configuration:
+    clusters:
+      - name: main
+        layout:
+          shardsCount: 1
+          replicasCount: 1
+    settings:
+      max_server_memory_usage_to_ram_ratio: 0.8
+    profiles:
+      readonly/readonly: 1
+    users:
+      # default is reachable from the pod only; ddl applies the DDL, reporting reads the reports (reporting-service).
+      default/networks/ip:
+        - 127.0.0.1
+        - ::1
+      ddl/profile: default
+      ddl/networks/ip: "::/0"
+      ddl/password:
+        valueFrom:
+          secretKeyRef:
+            name: clickhouse-users
+            key: ddl
+      reporting/profile: readonly
+      reporting/networks/ip: "::/0"
+      reporting/password:
+        valueFrom:
+          secretKeyRef:
+            name: clickhouse-users
+            key: reporting
+  templates:
+    podTemplates:
+      - name: clickhouse
+        spec:
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 101
+            runAsGroup: 101
+            fsGroup: 101
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: clickhouse
+              image: clickhouse/clickhouse-server:25.8-alpine@sha256:87e0a5b72f5465b18eacca7c76850e7ff551c9795c50e451f5646299e5e24146
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: [ALL]
+              resources:
+                requests:
+                  cpu: 200m
+                  memory: 1Gi
+                limits:
+                  cpu: "1"
+                  memory: 1536Mi
+    volumeClaimTemplates:
+      - name: data
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          storageClassName: local-path
+          resources:
+            requests:
+              storage: 10Gi

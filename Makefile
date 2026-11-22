@@ -1,4 +1,4 @@
-.PHONY: lint validate render template alerts dashboards policy test-policy precommit
+.PHONY: lint validate render template alerts ddl dashboards policy test-policy precommit
 
 # CRD schemas for kubeconform, pinned to a commit of the datreeio catalog.
 CRD_CATALOG_SHA := 3e8a8916ca1b7af6464606c2c2f5869dbafa9653
@@ -26,6 +26,10 @@ template:
 # vmalert -dryRun of the rules of platform/observability/vmalert (hack/alerts.sh).
 alerts:
 	hack/alerts.sh
+
+# DDL of platform/clickhouse/full on ClickHouse in a container (hack/ddl.sh).
+ddl:
+	hack/ddl.sh
 
 # JSON and metric names of the Grafana dashboards against the code of weigate (hack/dashboards.sh).
 dashboards:
