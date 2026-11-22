@@ -1,0 +1,40 @@
+# Wave 1: Karpenter with the KWOK provider (SRS INF-1.2, ADR 0006). Chart kwok/charts of kubernetes-sigs/karpenter v1.15.1,
+# CRDs come with the chart. The image is built from the same tag by infra/karpenter-kwok in weigate and pushed to GHCR.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: karpenter
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: weigate
+  sources:
+    - repoURL: https://github.com/kubernetes-sigs/karpenter
+      targetRevision: v1.15.1
+      path: kwok/charts
+      helm:
+        releaseName: karpenter
+        valueFiles:
+          - $values/platform/karpenter/values.yaml
+    - repoURL: https://github.com/m5tshift/weigate-gitops
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: karpenter
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

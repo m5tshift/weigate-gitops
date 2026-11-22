@@ -1,0 +1,41 @@
+# Wave 1: KWOK controller (SRS INF-1.2): moves the simulated nodes of Karpenter to Ready and their pods to Running.
+# Chart kwok 0.3.0 (KWOK v0.8.0, the version Karpenter v1.15.1 installs), CRDs come with the chart. It manages only nodes
+# annotated kwok.x-k8s.io/node=fake, so real nodes are untouched.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kwok
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: weigate
+  sources:
+    - repoURL: https://kwok.sigs.k8s.io/charts/
+      chart: kwok
+      targetRevision: 0.3.0
+      helm:
+        releaseName: kwok
+        valueFiles:
+          - $values/platform/kwok/values.yaml
+    - repoURL: https://github.com/m5tshift/weigate-gitops
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

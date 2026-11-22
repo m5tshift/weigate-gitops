@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Renders the ARC charts and kustomization (platform/arc), the Istio and observability charts with the values of this repository and the kustomizations of
+# Renders the Karpenter and KWOK charts, the ARC charts and kustomization (platform/arc), the Istio and observability charts with the values of this repository and the kustomizations of
 # platform/istio/mesh, platform/observability/config and both CNPG and both MongoDB profiles, platform/clickhouse/full, platform/network-policies/policies, the operator chart of platform/clickhouse, and validates the result with kubeconform.
 # Chart, version and values files come from the Applications.
 # Usage: hack/render.sh   (needs helm, kubectl, kubeconform and yq v4; network access to the chart repositories)
@@ -12,8 +12,8 @@ trap 'rm -rf "$out"' EXIT
 
 fail=0
 check() { # check <name> <manifest>
-  # CRDs are upstream artifacts without a schema in the default location; the rest is validated strictly.
-  if kubeconform -strict -summary -skip CustomResourceDefinition -schema-location default -schema-location "$CRD_SCHEMAS" "$2"; then
+  # CRDs are upstream artifacts without a schema in the default location, KWOKNodeClass and Stage (KWOK) have none in the catalog; the rest is validated strictly.
+  if kubeconform -strict -summary -skip CustomResourceDefinition,KWOKNodeClass,Stage -schema-location default -schema-location "$CRD_SCHEMAS" "$2"; then
     echo "render: $1 ok"
   else
     echo "render: $1 failed"; fail=1
@@ -42,7 +42,7 @@ done
 
 for dir in platform/istio/mesh platform/observability/config platform/cnpg/clusters platform/cnpg/full \
   platform/percona-mongodb/cluster platform/percona-mongodb/full platform/clickhouse/full \
-  platform/network-policies/policies; do
+  platform/network-policies/policies platform/karpenter/config; do
   name=$(echo "${dir#platform/}" | tr / -)
   if kubectl kustomize "$dir" >"$out/$name.yaml"; then
     check "$name" "$out/$name.yaml"
@@ -127,5 +127,38 @@ want="*.actions.githubusercontent.com *.blob.core.windows.net api.github.com cod
 [ "$got" = "$want" ] || { echo "render: arc-config: runners toFQDNs '$got'"; fail=1; }
 [ "$(yq -N 'select(.kind == "ExternalSecret") | .spec.dataFrom[0].extract.key' "$out/arc-config.yaml" | sed '/^$/d')" = "ci/github" ] \
   || { echo "render: arc-config: ExternalSecret must read ci/github"; fail=1; }
+
+# Karpenter and KWOK (SRS INF-1.2): the Karpenter chart is cloned from the tag of its Application, the KWOK charts come from their repository.
+# One replica and the pinned image, requests and limits everywhere; the NodePool taint is tolerated by the demo workload only.
+kver=$(yq eval '.spec.sources[0].targetRevision' apps/platform/karpenter.yaml)
+kpath=$(yq eval '.spec.sources[0].path' apps/platform/karpenter.yaml)
+if git clone -q --depth 1 --branch "$kver" https://github.com/kubernetes-sigs/karpenter "$out/karpenter-src" \
+  && helm template karpenter "$out/karpenter-src/$kpath" --namespace karpenter -f platform/karpenter/values.yaml --include-crds >"$out/karpenter.yaml"; then
+  check karpenter "$out/karpenter.yaml"
+else
+  echo "render: karpenter: clone or helm template failed"; fail=1
+fi
+kwokrepo=$(yq eval '.spec.sources[0].repoURL' apps/platform/kwok.yaml)
+kwokver=$(yq eval '.spec.sources[0].targetRevision' apps/platform/kwok.yaml)
+stagever=$(yq eval '.spec.source.targetRevision' apps/platform/kwok-stages.yaml)
+if helm template kwok kwok --repo "$kwokrepo" --version "$kwokver" --namespace kube-system -f platform/kwok/values.yaml --include-crds >"$out/kwok.yaml" \
+  && helm template kwok-stages stage-fast --repo "$kwokrepo" --version "$stagever" --namespace kube-system >"$out/kwok-stages.yaml"; then
+  check kwok "$out/kwok.yaml"
+  check kwok-stages "$out/kwok-stages.yaml"
+else
+  echo "render: kwok: helm template failed"; fail=1
+fi
+bad=$(yq -N 'select(.kind == "Deployment") | .spec.template.spec.containers[] | select(.resources.limits.memory == null or .resources.requests.memory == null) | .name' \
+  "$out/karpenter.yaml" "$out/kwok.yaml" "$out/karpenter-config.yaml" | sed '/^$/d')
+[ -z "$bad" ] || { echo "render: karpenter, kwok: no requests or limits: $bad"; fail=1; }
+got=$(yq -N 'select(.kind == "Deployment") | [.spec.replicas, .spec.template.spec.containers[0].image] | join(" ")' "$out/karpenter.yaml" | sed '/^$/d')
+[ "$got" = "1 ghcr.io/m5tshift/weigate/karpenter-kwok:v1.15.1" ] || { echo "render: karpenter: want 1 replica and the GHCR image of $kver: $got"; fail=1; }
+taint=$(yq -N 'select(.kind == "NodePool") | .spec.template.spec.taints[0] | .key + "=" + .value + ":" + .effect' "$out/karpenter-config.yaml" | sed '/^$/d')
+[ "$taint" = "weigate.io/simulated=true:NoSchedule" ] || { echo "render: karpenter-config: NodePool taint '$taint'"; fail=1; }
+tol=$(yq -N 'select(.kind == "Deployment") | .spec.template.spec.tolerations[0] | .key + "=" + .value + ":" + .effect' "$out/karpenter-config.yaml" | sed '/^$/d')
+[ "$tol" = "$taint" ] || { echo "render: karpenter-config: demo toleration '$tol'"; fail=1; }
+# No other workload of this repository may tolerate the taint.
+other=$(grep -rl 'weigate.io/simulated' apps platform services 2>/dev/null | grep -v -e '^platform/karpenter/' -e '^platform/kwok/' || true)
+[ -z "$other" ] || { echo "render: the taint weigate.io/simulated is used outside platform/karpenter: $other"; fail=1; }
 
 exit "$fail"

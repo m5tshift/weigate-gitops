@@ -1,0 +1,33 @@
+# Wave 2: KWOKNodeClass, NodePool of simulated nodes (taint) and the demo workload (SRS INF-1.2). After the CRDs of karpenter
+# (wave 1) and the Stages of kwok-stages.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: karpenter-config
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: weigate
+  source:
+    repoURL: https://github.com/m5tshift/weigate-gitops
+    targetRevision: main
+    path: platform/karpenter/config
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: karpenter
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

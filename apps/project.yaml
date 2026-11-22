@@ -1,8 +1,8 @@
 # Project for all platform and service Applications. Wave -1: exists before any Application that uses it.
 # Wave plan for child Applications:
 #   0 local-path-provisioner | 1 operators (strimzi, cnpg, percona, cert-manager, openbao, external-secrets), gateway-api-crds, istio-base
-#   1 also observability-crds (ServiceMonitor, PodMonitor)
-#   2 operator CRs (kafka, clusters, mongodb, cert-manager issuers, openbao-store), istiod, istio-cni
+#   1 also observability-crds (ServiceMonitor, PodMonitor), karpenter, kwok
+#   2 operator CRs (kafka, clusters, mongodb, cert-manager issuers, openbao-store), istiod, istio-cni, karpenter-config, kwok-stages
 #   3 valkey, anvil, rate-mock, merchant-mock, payer-sim, istio-gateway, istio-mesh, observability storage (victoria-metrics, victoria-logs),
 #     kube-state-metrics, observability-config
 #   4 merchant-service, invoice-service, chain-watcher, rate-service, tempo, grafana, vmalert, otel-target-allocator, otel-collector
@@ -32,6 +32,8 @@ spec:
     - https://grafana-community.github.io/helm-charts
     - https://open-telemetry.github.io/opentelemetry-helm-charts
     - ghcr.io/actions/actions-runner-controller-charts
+    - https://github.com/kubernetes-sigs/karpenter
+    - https://kwok.sigs.k8s.io/charts/
   destinations:
     - server: https://kubernetes.default.svc
       namespace: argocd
@@ -57,6 +59,8 @@ spec:
       namespace: ci
     - server: https://kubernetes.default.svc
       namespace: registry
+    - server: https://kubernetes.default.svc
+      namespace: karpenter
     # istio-cni and the OTel Collector: their DaemonSets with hostPath need the Pod Security exemption Talos gives kube-system.
     - server: https://kubernetes.default.svc
       namespace: kube-system
@@ -82,3 +86,14 @@ spec:
       kind: ClusterIssuer
     - group: external-secrets.io
       kind: ClusterSecretStore
+    # Karpenter with the KWOK provider: pools and node classes; KWOK lifecycle Stages; the chart of KWOK adds a FlowSchema.
+    - group: karpenter.sh
+      kind: NodePool
+    - group: karpenter.sh
+      kind: NodeClaim
+    - group: karpenter.kwok.sh
+      kind: KWOKNodeClass
+    - group: kwok.x-k8s.io
+      kind: Stage
+    - group: flowcontrol.apiserver.k8s.io
+      kind: FlowSchema
