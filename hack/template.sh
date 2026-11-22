@@ -69,9 +69,9 @@ for values in "${values_files[@]}"; do
     *) report "$c: image '$image', want ghcr.io/m5tshift/weigate/$c:<tag>" ;;
   esac
 
-  if yq eval-all "$deploy | .spec.template.spec.containers[].env[] | select(.name == \"OTEL_EXPORTER_OTLP_ENDPOINT\")" \
+  if ! yq eval-all "$deploy | .spec.template.spec.containers[].env[] | select(.name == \"OTEL_EXPORTER_OTLP_ENDPOINT\")" \
     "$manifest" | grep -q .; then
-    report "$c: OTLP export is on"
+    report "$c: no OTEL_EXPORTER_OTLP_ENDPOINT, traces do not reach the collector"
   fi
 
   missing=$(yq eval-all "$deploy | .spec.template.spec | (.containers[], .initContainers[]?) |

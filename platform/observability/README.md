@@ -3,7 +3,7 @@
 Stack of SRS 4.5: VictoriaMetrics, VictoriaLogs, Tempo (blocks in the Garage bucket `tempo-traces`), Grafana,
 vmalert and Alertmanager in `observability`; OTel Collector (DaemonSet) and Target Allocator in `kube-system`.
 
-- Services send OTLP to `otel-collector.kube-system:4317`. Pod logs are tailed by the collector of each node.
+- Services send traces and logs over OTLP/HTTP to `otel-collector.kube-system:4318`; metrics are scraped from `/metrics`, OTLP metrics are not accepted. Pod logs are tailed by the collector of each node.
 - Alert rules (SRS 4.5.4) are inline in `vmalert/values.yaml`; `make alerts` checks them with `vmalert -dryRun`.
   Volume usage (`kubelet_volume_stats_*`) comes from a static kubelet scrape of the OTel Collector.
 - Metrics are scraped by the collectors from every ServiceMonitor and PodMonitor (`config/monitors.yaml`, charts).
