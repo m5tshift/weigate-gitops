@@ -1,0 +1,44 @@
+# merchant-mock on the minimal stand (SRS 6.4); merged over charts/merchant-mock/values.yaml of weigate.
+image:
+  repository: ghcr.io/m5tshift/weigate/merchant-mock
+  # Updated by CI of weigate after the image build; not edited by hand.
+  tag: "6f2090f"
+
+# Secrets, faults, journals and deduplication state live in memory per replica, so one replica; no PDB.
+replicaCount: 1
+
+# Sidecar in every pod of apps (SRS 4.1.10): with mTLS STRICT a pod without it can neither call nor be called.
+podLabels:
+  sidecar.istio.io/inject: "true"
+
+# The istio agent merges /metrics of the app into :15020/stats/prometheus, which the OTel Collector scrapes outside
+# mTLS STRICT (platform/observability/config/monitors.yaml, SRS 4.5.1).
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: /metrics
+
+pdb:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+# Traces go to the OTel Collector over OTLP/HTTP; metrics are scraped from /metrics (the collector drops OTLP metrics).
+telemetry:
+  otlpEndpoint: "http://otel-collector.kube-system:4318"
+  traceSampleRatio: 0.5
+
+env:
+  # SRS 4.1.10: webhook timestamp tolerance; the previous secret version is accepted 24 h after rotation.
+  TIMESTAMP_TOLERANCE: 5m
+  PREVIOUS_SECRET_TTL: 24h
+  # Memory bounds per endpoint: journal entries and remembered event ids.
+  JOURNAL_SIZE: "1000"
+  SEEN_EVENTS: "100000"
+  LOG_LEVEL: info

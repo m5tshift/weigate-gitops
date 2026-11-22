@@ -3,7 +3,7 @@
 #   0 local-path-provisioner | 1 operators (strimzi, cnpg, percona, cert-manager, openbao, external-secrets), gateway-api-crds, istio-base
 #   1 also observability-crds (ServiceMonitor, PodMonitor)
 #   2 operator CRs (kafka, clusters, mongodb, cert-manager issuers, openbao-store), istiod, istio-cni
-#   3 valkey, anvil, rate-mock, payer-sim, istio-gateway, istio-mesh, observability storage (victoria-metrics, victoria-logs),
+#   3 valkey, anvil, rate-mock, merchant-mock, payer-sim, istio-gateway, istio-mesh, observability storage (victoria-metrics, victoria-logs),
 #     kube-state-metrics, observability-config
 #   4 merchant-service, invoice-service, chain-watcher, rate-service, tempo, grafana, vmalert, otel-target-allocator, otel-collector
 apiVersion: argoproj.io/v1alpha1
