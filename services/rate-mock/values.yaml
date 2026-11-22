@@ -29,9 +29,10 @@ resources:
     cpu: 200m
     memory: 64Mi
 
-# No observability on the minimal stand: an empty endpoint turns the OTLP export off.
+# Traces go to the OTel Collector over OTLP/HTTP; metrics are scraped from /metrics (the collector drops OTLP metrics).
 telemetry:
-  otlpEndpoint: ""
+  otlpEndpoint: "http://otel-collector.kube-system:4318"
+  traceSampleRatio: 0.5
 
 env:
   BASE_PRICE_ETH_USD: "3700"

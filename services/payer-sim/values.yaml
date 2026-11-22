@@ -29,9 +29,10 @@ resources:
     cpu: 500m
     memory: 128Mi
 
-# No observability on the minimal stand: an empty endpoint turns the OTLP export off.
+# Traces go to the OTel Collector over OTLP/HTTP; metrics are scraped from /metrics (the collector drops OTLP metrics).
 telemetry:
-  otlpEndpoint: ""
+  otlpEndpoint: "http://otel-collector.kube-system:4318"
+  traceSampleRatio: 0.5
 
 # Secret in apps made by the stand secrets script (weigate infra/stand-secrets): payer-sim-payer-keys,
 # keys of the Anvil accounts derived from the same mnemonic as anvil-mnemonic in chain.
