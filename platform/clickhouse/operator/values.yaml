@@ -1,0 +1,27 @@
+# Altinity Operator for ClickHouse, chart altinity-clickhouse-operator 0.27.4 (https://helm.altinity.com), SRS 4.1.6.
+# Not synced on the minimal stand: ClickHouse is not part of it (SRS 6.4). The Applications clickhouse-operator and
+# clickhouse (path platform/clickhouse/full) are added together with the move to the full stand (m5tshift/weigate#183).
+# The operator watches only data; the namespace is created by bootstrap.
+watchNamespaces:
+  - data
+rbac:
+  namespaceScoped: true
+operator:
+  resources:
+    requests:
+      cpu: 20m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+# The metrics exporter and the ServiceMonitor are not needed until observability scrapes ClickHouse.
+metrics:
+  enabled: false
+crdHook:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi

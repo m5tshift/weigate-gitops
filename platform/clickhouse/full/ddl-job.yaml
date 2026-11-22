@@ -1,0 +1,70 @@
+# Applies ddl/*.sql in order after every sync; every statement is CREATE ... IF NOT EXISTS, so a rerun changes nothing.
+# Changing an existing table needs a separate migration, not an edit of these files.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: clickhouse-ddl
+  namespace: data
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 6
+  template:
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: ddl
+          image: clickhouse/clickhouse-server:25.8-alpine@sha256:87e0a5b72f5465b18eacca7c76850e7ff551c9795c50e451f5646299e5e24146
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              until clickhouse-client --query 'SELECT 1' > /dev/null 2>&1; do sleep 3; done
+              for f in /ddl/*.sql; do
+                echo "apply $f"
+                clickhouse-client --multiquery < "$f"
+              done
+          env:
+            - name: HOME
+              value: /tmp
+            - name: CLICKHOUSE_HOST
+              value: clickhouse-weigate.data
+            - name: CLICKHOUSE_USER
+              value: ddl
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: clickhouse-users
+                  key: ddl
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          volumeMounts:
+            - name: ddl
+              mountPath: /ddl
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: ddl
+          configMap:
+            name: clickhouse-ddl
+        - name: tmp
+          emptyDir: {}

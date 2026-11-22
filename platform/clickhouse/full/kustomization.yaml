@@ -1,0 +1,21 @@
+# ClickHouse of the full stand (SRS 4.1.5, 4.1.6, 6.2): one instance, Kafka-engine tables with materialized views for
+# invoice.events, chain.transfers and rate.ticks, views for reports. Not synced on the minimal stand (SRS 6.4):
+# no Application reads this directory until the move to the full stand (m5tshift/weigate#183).
+# ClickHouse is not backed up: the tables are rebuilt from the Kafka topics within their retention (SRS 4.1.6).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: data
+resources:
+  - clickhouse.yaml
+  - externalsecret.yaml
+  - ddl-job.yaml
+configMapGenerator:
+  - name: clickhouse-ddl
+    files:
+      - ddl/01-database.sql
+      - ddl/02-invoice-events.sql
+      - ddl/03-chain-transfers.sql
+      - ddl/04-rate-ticks.sql
+      - ddl/05-reports.sql
+generatorOptions:
+  disableNameSuffixHash: true
