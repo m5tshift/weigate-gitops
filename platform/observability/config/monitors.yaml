@@ -96,3 +96,23 @@ spec:
   podMetricsEndpoints:
     - port: prometheus
       interval: 30s
+---
+# Tempo built-in metrics (/metrics on :3200) for the Traces dashboard; exclude tempo-headless to avoid duplicates.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: tempo
+spec:
+  namespaceSelector:
+    matchNames: [observability]
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tempo
+      app.kubernetes.io/instance: tempo
+    matchExpressions:
+      - key: prometheus.io/service-monitor
+        operator: DoesNotExist
+  endpoints:
+    - port: tempo-prom-metrics
+      path: /metrics
+      interval: 30s
