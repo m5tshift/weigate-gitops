@@ -34,9 +34,6 @@ bao-init*
 # Helm dependencies
 **/charts/*.tgz
 
-# Claude Code personal settings
-.claude/settings.local.json
-
 # OS / IDE
 .DS_Store
 .idea/
