@@ -14,5 +14,6 @@ configMapGenerator:
       - dashboards/chain.json
       - dashboards/business.json
       - dashboards/infrastructure.json
+      - dashboards/traces.json
 generatorOptions:
   disableNameSuffixHash: true
