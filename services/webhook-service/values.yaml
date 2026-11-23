@@ -3,7 +3,7 @@
 image:
   repository: ghcr.io/m5tshift/weigate/webhook-service
   # Updated by CI of weigate after the image build; not edited by hand.
-  tag: "0c78a06"
+  tag: "587ef7a"
 
 # SRS 6.3: two replicas, one may be drained at a time.
 replicaCount: 2
