@@ -1,0 +1,64 @@
+# reporting-service on the full stand (SRS 6.2, 6.3); merged over charts/reporting-service/values.yaml of weigate.
+# Not synced yet: services/reporting-service/application.yaml moves to apps/services with m5tshift/weigate#183.
+image:
+  repository: ghcr.io/m5tshift/weigate/reporting-service
+  # Updated by CI of weigate after the image build; not edited by hand.
+  tag: "2f32962"
+
+# SRS 6.2: one replica of reporting-service is part of the memory budget; a PDB of one replica would block a drain.
+replicaCount: 1
+pdb:
+  enabled: false
+
+# Sidecar in every pod of apps (SRS 4.1.10): with mTLS STRICT a pod without it can neither call nor be called.
+podLabels:
+  sidecar.istio.io/inject: "true"
+
+# The istio agent merges /metrics of the app into :15020/stats/prometheus, which the OTel Collector scrapes outside
+# mTLS STRICT (platform/observability/config/monitors.yaml, SRS 4.5.1).
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: /metrics
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 128Mi
+
+# Traces go to the OTel Collector over OTLP/HTTP; metrics are scraped from /metrics (the collector drops OTLP metrics).
+telemetry:
+  otlpEndpoint: "http://otel-collector.kube-system:4318"
+  traceSampleRatio: 0.5
+
+# Password of the read-only ClickHouse user reporting (OpenBao clickhouse/users, platform/clickhouse/full).
+secrets:
+  - name: clickhouse
+    externalSecret:
+      enabled: true
+      data:
+        - secretKey: password
+          remoteRef:
+            key: clickhouse/users
+            property: reporting
+
+env:
+  # Native protocol of the CHI weigate (platform/clickhouse/full).
+  CLICKHOUSE_ADDR: clickhouse-weigate.data.svc:9000
+  CLICKHOUSE_DATABASE: weigate
+  CLICKHOUSE_USERNAME: reporting
+  CLICKHOUSE_PASSWORD_FILE: /var/run/secrets/weigate/clickhouse/password
+  # iss of the merchant-service JWT (SRS 4.1.10); the signature is verified against its JWKS.
+  JWT_ISSUER: weigate-merchant-service
+  JWKS_URL: http://merchant-service.apps.svc:8080/.well-known/jwks.json
+  JWKS_TIMEOUT: 2s
+  JWKS_REFRESH: 5m
+  JWKS_MIN_INTERVAL: 10s
+  # Longest period of a report in days, timeout of one query, Retry-After of 503.
+  REPORT_MAX_DAYS: "92"
+  QUERY_TIMEOUT: 10s
+  RETRY_AFTER: 5s
+  LOG_LEVEL: info

@@ -24,7 +24,8 @@ The Application moves to `apps/platform` with m5tshift/weigate#183, after the cl
 | From | To | Port |
 |---|---|---|
 | `istio-system/istio=gateway` | `merchant-service`, `invoice-service`, `ledger-service`, `reporting-service` | 8080 |
-| `invoice-service` | `rate-service`, `merchant-service` (JWKS) | 8080 |
+| `invoice-service`, `reporting-service` | `merchant-service` (JWKS) | 8080 |
+| `invoice-service` | `rate-service` | 8080 |
 | `reconciliation-service` | `ledger-service` | 8080 |
 | `payer-sim` | `invoice-service` | 8080 |
 | `rate-service` | `rate-mock` | 8080 |
