@@ -109,7 +109,7 @@ spec:
             - port: "8080"
               protocol: TCP
 ---
-# JWKS of merchant-service for invoice-service (SRS 4.1.2).
+# JWKS of merchant-service for invoice-service and reporting-service (SRS 4.1.2, 4.1.10).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -121,8 +121,10 @@ spec:
       app.kubernetes.io/name: merchant-service
   ingress:
     - fromEndpoints:
-        - matchLabels:
-            app.kubernetes.io/name: invoice-service
+        - matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values: [invoice-service, reporting-service]
       toPorts:
         - ports:
             - port: "8080"

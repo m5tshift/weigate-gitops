@@ -1,0 +1,40 @@
+# Wave 5: reporting-service, merchant turnover and conversion reports (SRS 4.1.3, FR-11); after ClickHouse.
+# Full stand (SRS 6.3): the chart comes from Zot (SRS CI-5.3), values from here. Not synced: root reads only apps/;
+# this file moves to apps/services with m5tshift/weigate#183, together with ClickHouse and its users.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: reporting-service
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: weigate
+  sources:
+    - repoURL: zot.registry.svc:5000/weigate/charts
+      chart: reporting-service
+      targetRevision: 0.1.0
+      helm:
+        releaseName: reporting-service
+        valueFiles:
+          - $values/services/reporting-service/values.yaml
+    - repoURL: https://github.com/m5tshift/weigate-gitops
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: apps
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
