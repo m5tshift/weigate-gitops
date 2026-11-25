@@ -3,6 +3,12 @@
 # never blocks a drain. Two replicas and the topology spread of the full profile: m5tshift/weigate#183.
 replicas: 1
 
+# Upstream kwok/charts v1.15.1 leaves staticCapacity and capacityBuffer unset, rendering invalid empty booleans in FEATURE_GATES.
+settings:
+  featureGates:
+    staticCapacity: false
+    capacityBuffer: false
+
 controller:
   image:
     repository: ghcr.io/m5tshift/weigate/karpenter-kwok/kwok
