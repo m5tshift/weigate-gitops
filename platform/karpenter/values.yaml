@@ -5,7 +5,7 @@ replicas: 1
 
 controller:
   image:
-    repository: ghcr.io/m5tshift/weigate/karpenter-kwok
+    repository: ghcr.io/m5tshift/weigate/karpenter-kwok/kwok
     tag: v1.15.1
   resources:
     requests:

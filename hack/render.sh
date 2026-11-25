@@ -152,7 +152,7 @@ bad=$(yq -N 'select(.kind == "Deployment") | .spec.template.spec.containers[] | 
   "$out/karpenter.yaml" "$out/kwok.yaml" "$out/karpenter-config.yaml" | sed '/^$/d')
 [ -z "$bad" ] || { echo "render: karpenter, kwok: no requests or limits: $bad"; fail=1; }
 got=$(yq -N 'select(.kind == "Deployment") | [.spec.replicas, .spec.template.spec.containers[0].image] | join(" ")' "$out/karpenter.yaml" | sed '/^$/d')
-[ "$got" = "1 ghcr.io/m5tshift/weigate/karpenter-kwok:v1.15.1" ] || { echo "render: karpenter: want 1 replica and the GHCR image of $kver: $got"; fail=1; }
+[ "$got" = "1 ghcr.io/m5tshift/weigate/karpenter-kwok/kwok:v1.15.1" ] || { echo "render: karpenter: want 1 replica and the GHCR image of $kver: $got"; fail=1; }
 taint=$(yq -N 'select(.kind == "NodePool") | .spec.template.spec.taints[0] | .key + "=" + .value + ":" + .effect' "$out/karpenter-config.yaml" | sed '/^$/d')
 [ "$taint" = "weigate.io/simulated=true:NoSchedule" ] || { echo "render: karpenter-config: NodePool taint '$taint'"; fail=1; }
 tol=$(yq -N 'select(.kind == "Deployment") | .spec.template.spec.tolerations[0] | .key + "=" + .value + ":" + .effect' "$out/karpenter-config.yaml" | sed '/^$/d')
