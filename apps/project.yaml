@@ -67,6 +67,9 @@ spec:
     # istio-cni and the OTel Collector: their DaemonSets with hostPath need the Pod Security exemption Talos gives kube-system.
     - server: https://kubernetes.default.svc
       namespace: kube-system
+    # Karpenter chart creates a Role/RoleBinding in kube-node-lease to read node leases.
+    - server: https://kubernetes.default.svc
+      namespace: kube-node-lease
   clusterResourceWhitelist:
     - group: apiextensions.k8s.io
       kind: CustomResourceDefinition
