@@ -20,6 +20,8 @@ spec:
         ensure: present
         login: true
         createrole: true
+        # PostgreSQL 16+ requires ADMIN OPTION or SUPERUSER to ALTER ROLE on initdb-created owners.
+        superuser: true
         passwordSecret:
           name: merchant-pg-vault-admin
   storage:
