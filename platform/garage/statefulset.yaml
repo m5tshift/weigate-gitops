@@ -27,6 +27,10 @@ spec:
         - name: garage
           image: dxflrs/garage:v1.3.1@sha256:58e68794286868230708803e50495bfe7d1d1c7b696e0c2dee99b03c524fc960
           args: ["/garage", "-c", "/etc/garage/garage.toml", "server"]
+          env:
+            # Kubernetes mounts Secret volumes as root:fsGroup (0440); Garage expects 0600 without this flag.
+            - name: GARAGE_ALLOW_WORLD_READABLE_SECRETS
+              value: "true"
           ports:
             - name: s3
               containerPort: 3900
@@ -73,6 +77,7 @@ spec:
         - name: secrets
           secret:
             secretName: garage-secrets
+            defaultMode: 0440
   volumeClaimTemplates:
     - metadata:
         name: data
