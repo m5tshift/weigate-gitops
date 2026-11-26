@@ -1,5 +1,5 @@
 # Wave 3: rate-mock, the rate generator for rate-service in the mock mode (SRS 4.1.3).
-# Minimal stand (SRS 6.4): the chart comes from git of the main repository, values and the GHCR image tag from here.
+# Full stand (SRS 6.3): the chart comes from Zot (SRS CI-5.3), values from here.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -12,9 +12,9 @@ metadata:
 spec:
   project: weigate
   sources:
-    - repoURL: https://github.com/m5tshift/weigate
-      targetRevision: main
-      path: charts/rate-mock
+    - repoURL: zot.registry.svc:5000/weigate/charts
+      chart: rate-mock
+      targetRevision: 0.1.1
       helm:
         releaseName: rate-mock
         valueFiles:

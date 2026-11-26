@@ -1,7 +1,7 @@
 # ledger-service on the full stand (SRS 6.2, 6.3); merged over charts/ledger-service/values.yaml of weigate.
 # Not synced yet: services/ledger-service/application.yaml moves to apps/services with m5tshift/weigate#183.
 image:
-  repository: ghcr.io/m5tshift/weigate/ledger-service
+  repository: zot.registry.svc:5000/weigate/ledger-service
   # Updated by CI of weigate after the image build; not edited by hand.
   tag: "edbc526"
 

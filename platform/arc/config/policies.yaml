@@ -31,6 +31,7 @@ spec:
         - matchPattern: "*.blob.core.windows.net"
         - matchName: proxy.golang.org
         - matchName: sum.golang.org
+        - matchName: get.helm.sh
       toPorts:
         - ports:
             - port: "443"

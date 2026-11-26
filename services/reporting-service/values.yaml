@@ -1,7 +1,7 @@
 # reporting-service on the full stand (SRS 6.2, 6.3); merged over charts/reporting-service/values.yaml of weigate.
 # Not synced yet: services/reporting-service/application.yaml moves to apps/services with m5tshift/weigate#183.
 image:
-  repository: ghcr.io/m5tshift/weigate/reporting-service
+  repository: zot.registry.svc:5000/weigate/reporting-service
   # Updated by CI of weigate after the image build; not edited by hand.
   tag: "2f32962"
 

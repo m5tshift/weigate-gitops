@@ -1,10 +1,30 @@
-# Full stand overlay of merchant-service (SRS 4.1.10, INF-2.4), applied over values.yaml; the minimal stand uses
-# values.yaml alone. The Application switches to values.yaml + values-full.yaml with m5tshift/weigate#183, after
-# OpenBao is initialized (m5tshift/weigate#64).
+# Full stand overlay of merchant-service (SRS 4.1.10, 6.2, 6.3, INF-2.4), applied over values.yaml.
+image:
+  repository: zot.registry.svc:5000/weigate/merchant-service
 
-# Webhook secrets go to OpenBao KV v2 webhook/<merchantId> (without OPENBAO_ADDR the rotation endpoint answers 501),
-# JWTs are signed by Transit key merchant-jwt. The chart then drops the secret jwt-signing and JWT_SIGNING_KEY_FILE
-# of values.yaml (openbao.omitSecrets, openbao.omitEnv). API key rotation is configured in values.yaml.
+# SRS 6.3: two replicas, one may be drained at a time.
+replicaCount: 2
+pdb:
+  enabled: true
+  minAvailable: 1
+
+# Password of merchant-pg owner merchant-service rotated by OpenBao database engine (openbao-database).
+# jwt-signing is omitted: JWTs are signed by OpenBao Transit key merchant-jwt.
+secrets:
+  - name: postgres
+    externalSecret:
+      enabled: true
+      secretStore:
+        kind: ClusterSecretStore
+        name: openbao-database
+      data:
+        - secretKey: password
+          remoteRef:
+            key: static-creds/merchant-service
+            property: password
+
+# Webhook secrets go to OpenBao KV v2 webhook/<merchantId>, JWTs are signed by Transit key merchant-jwt.
+# The chart drops JWT_SIGNING_KEY_FILE from values.yaml (openbao.omitEnv).
 openbao:
   enabled: true
   addr: http://openbao.secrets.svc:8200

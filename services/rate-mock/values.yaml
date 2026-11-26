@@ -1,6 +1,6 @@
 # rate-mock on the minimal stand (SRS 6.4); merged over charts/rate-mock/values.yaml of weigate.
 image:
-  repository: ghcr.io/m5tshift/weigate/rate-mock
+  repository: zot.registry.svc:5000/weigate/rate-mock
   # Updated by CI of weigate after the image build; not edited by hand.
   tag: "edbc526"
 

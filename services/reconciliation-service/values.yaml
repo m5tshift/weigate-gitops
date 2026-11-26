@@ -2,7 +2,7 @@
 # weigate. Not synced yet: services/reconciliation-service/application.yaml moves to apps/services with
 # m5tshift/weigate#183.
 image:
-  repository: ghcr.io/m5tshift/weigate/reconciliation-service
+  repository: zot.registry.svc:5000/weigate/reconciliation-service
   # Updated by CI of weigate after the image build; not edited by hand.
   tag: "edbc526"
 

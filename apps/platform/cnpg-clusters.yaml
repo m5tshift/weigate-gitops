@@ -15,7 +15,7 @@ spec:
   source:
     repoURL: https://github.com/m5tshift/weigate-gitops
     targetRevision: main
-    path: platform/cnpg/clusters
+    path: platform/cnpg/full
   destination:
     server: https://kubernetes.default.svc
     namespace: data

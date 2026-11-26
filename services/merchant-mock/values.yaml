@@ -1,6 +1,6 @@
 # merchant-mock on the minimal stand (SRS 6.4); merged over charts/merchant-mock/values.yaml of weigate.
 image:
-  repository: ghcr.io/m5tshift/weigate/merchant-mock
+  repository: zot.registry.svc:5000/weigate/merchant-mock
   # Updated by CI of weigate after the image build; not edited by hand.
   tag: "edbc526"
 

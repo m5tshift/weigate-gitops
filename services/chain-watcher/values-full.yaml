@@ -1,0 +1,28 @@
+# Full stand overlay of chain-watcher (SRS 6.2, 6.3, INF-2.4), applied over values.yaml.
+image:
+  repository: zot.registry.svc:5000/weigate/chain-watcher
+
+# SRS 6.3: two replicas (active-standby via Kubernetes Lease), one may be drained at a time.
+replicaCount: 2
+pdb:
+  enabled: true
+  minAvailable: 1
+
+# Passwords of the MongoDB user (OpenBao mongodb/users) and Valkey ACL user (OpenBao valkey/users).
+secrets:
+  - name: mongodb
+    externalSecret:
+      enabled: true
+      data:
+        - secretKey: password
+          remoteRef:
+            key: mongodb/users
+            property: chain-watcher
+  - name: valkey
+    externalSecret:
+      enabled: true
+      data:
+        - secretKey: password
+          remoteRef:
+            key: valkey/users
+            property: chain-watcher
