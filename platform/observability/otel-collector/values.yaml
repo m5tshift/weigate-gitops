@@ -27,6 +27,10 @@ extraEnvs:
     valueFrom:
       fieldRef:
         fieldPath: metadata.name
+  - name: K8S_NODE_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: spec.nodeName
 clusterRole:
   create: true
   rules:
@@ -61,6 +65,22 @@ config:
             metric_relabel_configs:
               - source_labels: [__name__]
                 regex: kubelet_volume_stats_.*
+                action: keep
+          - job_name: kubelet-resource
+            scheme: https
+            metrics_path: /metrics/resource
+            scrape_interval: 30s
+            authorization:
+              credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+            tls_config:
+              insecure_skip_verify: true
+            static_configs:
+              - targets: ["${env:K8S_NODE_IP}:10250"]
+                labels:
+                  node: "${env:K8S_NODE_NAME}"
+            metric_relabel_configs:
+              - source_labels: [__name__]
+                regex: (node|container)_(cpu_usage_seconds_total|memory_working_set_bytes)
                 action: keep
   exporters:
     prometheusremotewrite:
