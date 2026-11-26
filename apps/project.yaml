@@ -23,6 +23,7 @@ spec:
     - https://strimzi.io/charts/
     - https://cloudnative-pg.github.io/charts
     - https://percona.github.io/percona-helm-charts/
+    - https://helm.altinity.com
     - https://charts.jetstack.io
     - https://istio-release.storage.googleapis.com/charts
     - https://github.com/kubernetes-sigs/gateway-api

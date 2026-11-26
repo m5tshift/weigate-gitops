@@ -1,0 +1,32 @@
+# Full stand overlay of invoice-service (SRS 6.2, 6.3, INF-2.4), applied over values.yaml.
+image:
+  repository: zot.registry.svc:5000/weigate/invoice-service
+
+# SRS 6.3: two replicas, one may be drained at a time.
+replicaCount: 2
+pdb:
+  enabled: true
+  minAvailable: 1
+
+# Password of invoice-pg owner invoice-service rotated by OpenBao database engine (openbao-database)
+# and Valkey ACL user invoice-service (OpenBao valkey/users).
+secrets:
+  - name: postgres
+    externalSecret:
+      enabled: true
+      secretStore:
+        kind: ClusterSecretStore
+        name: openbao-database
+      data:
+        - secretKey: password
+          remoteRef:
+            key: static-creds/invoice-service
+            property: password
+  - name: valkey
+    externalSecret:
+      enabled: true
+      data:
+        - secretKey: password
+          remoteRef:
+            key: valkey/users
+            property: invoice-service

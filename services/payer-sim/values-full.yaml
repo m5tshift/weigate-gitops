@@ -1,0 +1,14 @@
+# Full stand overlay of payer-sim (SRS 6.3, INF-2.4), applied over values.yaml.
+image:
+  repository: zot.registry.svc:5000/weigate/payer-sim
+
+# Keys of Anvil payer accounts from OpenBao KV v2 payer-keys/anvil (field keys).
+secrets:
+  - name: payer-keys
+    externalSecret:
+      enabled: true
+      data:
+        - secretKey: keys
+          remoteRef:
+            key: payer-keys/anvil
+            property: keys

@@ -15,7 +15,10 @@ data:
         "port": "5000",
         "compat": ["docker2s2"],
         "accessControl": {
-          "repositories": {"**": {"anonymousPolicy": ["read"]}}
+          "repositories": {
+            "weigate/**": {"anonymousPolicy": ["read", "create", "update", "delete"]},
+            "**": {"anonymousPolicy": ["read"]}
+          }
         }
       },
       "log": {"level": "info"},

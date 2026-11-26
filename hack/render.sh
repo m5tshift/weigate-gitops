@@ -71,9 +71,9 @@ got=$(mongo "$out/percona-mongodb-full.yaml" '[.spec.replsets[0].size, .spec.rep
 [ "$got" = "3 768Mi true 0 3 * * * 7 garage mongo-backups chain-watcher,webhook-service,reconciliation-service" ] \
   || { echo "render: percona-mongodb-full: unexpected profile: $got"; fail=1; }
 
-# ClickHouse: no Application reads platform/clickhouse yet (SRS 6.4), so the operator chart is rendered from its values with the
-# version named in the header of values.yaml. The full profile has one shard, one replica, requests and limits, no Secret (SRS 4.1.6).
-ch_version=$(sed -n 's/^# Altinity Operator for ClickHouse, chart altinity-clickhouse-operator \([0-9.]*\) .*/\1/p' platform/clickhouse/operator/values.yaml)
+# ClickHouse: operator chart is rendered from apps/platform/clickhouse-operator.yaml.
+# The full profile has one shard, one replica, requests and limits, no Secret (SRS 4.1.6).
+ch_version=$(yq eval '.spec.sources[] | select(.chart != null) | .targetRevision' apps/platform/clickhouse-operator.yaml)
 if [ -n "$ch_version" ] && helm template clickhouse-operator altinity-clickhouse-operator --repo https://helm.altinity.com \
   --version "$ch_version" --namespace data -f platform/clickhouse/operator/values.yaml >"$out/clickhouse-operator.yaml"; then
   check clickhouse-operator "$out/clickhouse-operator.yaml"
@@ -90,10 +90,10 @@ bad=$(yq -N 'select(.kind == "ClickHouseInstallation") | .spec.templates.podTemp
 ddl=$(yq -N 'select(.kind == "ConfigMap") | .data | keys | join(" ")' "$out/clickhouse-full.yaml" | sed '/^$/d')
 [ "$ddl" = "01-database.sql 02-invoice-events.sql 03-chain-transfers.sql 04-rate-ticks.sql 05-reports.sql" ] || { echo "render: clickhouse-full: ddl files: $ddl"; fail=1; }
 
-# ARC: no Application reads platform/arc yet (SRS 6.4), so both charts are rendered from the Applications in platform/arc/apps
-# (OCI chart, version, values). Runners start from zero, are limited, have requests and limits, no Secret, no privileged container;
-# the runner network policy allows exactly the hosts of SRS 4.1.11 (plus *.blob.core.windows.net, where GitHub keeps logs and artifacts).
-for app in platform/arc/apps/arc-controller.yaml platform/arc/apps/arc-runners.yaml; do
+# ARC: both charts are rendered from the Applications in apps/platform (OCI chart, version, values).
+# Runners start from zero, are limited, have requests and limits, no Secret, no privileged container;
+# the runner network policy allows exactly the hosts of SRS 4.1.11 (plus *.blob.core.windows.net and get.helm.sh).
+for app in apps/platform/arc-controller.yaml apps/platform/arc-runners.yaml; do
   name=$(yq eval '.metadata.name' "$app")
   chart=$(yq eval '.spec.sources[] | select(.chart != null) | .chart' "$app")
   repo=$(yq eval '.spec.sources[] | select(.chart != null) | .repoURL' "$app")
@@ -123,7 +123,7 @@ grep -q 'buildkit:.*-rootless@sha256:' "$out/arc-runners.yaml" || { echo "render
 [ "$(yq -N 'select(.kind == "Secret") | .kind' "$out/arc-controller.yaml" "$out/arc-runners.yaml" "$out/arc-config.yaml" | sed '/^$/d' | wc -l)" -eq 0 ] \
   || { echo "render: arc: Secret in the manifests"; fail=1; }
 got=$(yq -N 'select(.kind == "CiliumNetworkPolicy" and .metadata.name == "runners") | .spec.egress[].toFQDNs[]? | .matchName // .matchPattern' "$out/arc-config.yaml" | sed '/^$/d' | sort | tr '\n' ' ')
-want="*.actions.githubusercontent.com *.blob.core.windows.net api.github.com codeload.github.com github.com objects.githubusercontent.com proxy.golang.org sum.golang.org "
+want="*.actions.githubusercontent.com *.blob.core.windows.net api.github.com codeload.github.com get.helm.sh github.com objects.githubusercontent.com proxy.golang.org sum.golang.org "
 [ "$got" = "$want" ] || { echo "render: arc-config: runners toFQDNs '$got'"; fail=1; }
 [ "$(yq -N 'select(.kind == "ExternalSecret") | .spec.dataFrom[0].extract.key' "$out/arc-config.yaml" | sed '/^$/d')" = "ci/github" ] \
   || { echo "render: arc-config: ExternalSecret must read ci/github"; fail=1; }
@@ -152,7 +152,7 @@ bad=$(yq -N 'select(.kind == "Deployment") | .spec.template.spec.containers[] | 
   "$out/karpenter.yaml" "$out/kwok.yaml" "$out/karpenter-config.yaml" | sed '/^$/d')
 [ -z "$bad" ] || { echo "render: karpenter, kwok: no requests or limits: $bad"; fail=1; }
 got=$(yq -N 'select(.kind == "Deployment") | [.spec.replicas, .spec.template.spec.containers[0].image] | join(" ")' "$out/karpenter.yaml" | sed '/^$/d')
-[ "$got" = "1 ghcr.io/m5tshift/weigate/karpenter-kwok/kwok:v1.15.1" ] || { echo "render: karpenter: want 1 replica and the GHCR image of $kver: $got"; fail=1; }
+[ "$got" = "2 ghcr.io/m5tshift/weigate/karpenter-kwok/kwok:v1.15.1" ] || { echo "render: karpenter: want 2 replicas and the GHCR image of $kver: $got"; fail=1; }
 taint=$(yq -N 'select(.kind == "NodePool") | .spec.template.spec.taints[0] | .key + "=" + .value + ":" + .effect' "$out/karpenter-config.yaml" | sed '/^$/d')
 [ "$taint" = "weigate.io/simulated=true:NoSchedule" ] || { echo "render: karpenter-config: NodePool taint '$taint'"; fail=1; }
 tol=$(yq -N 'select(.kind == "Deployment") | .spec.template.spec.tolerations[0] | .key + "=" + .value + ":" + .effect' "$out/karpenter-config.yaml" | sed '/^$/d')

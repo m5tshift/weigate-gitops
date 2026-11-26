@@ -1,11 +1,11 @@
-# Wave 3: Zot, pull-through cache and OCI chart registry (SRS INF-1.4, CI-5.3). Own manifests on the official image.
+# Wave 2: Zot, pull-through cache and OCI chart registry (SRS INF-1.4, CI-5.3). Own manifests on the official image.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: zot
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-wave: "2"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:

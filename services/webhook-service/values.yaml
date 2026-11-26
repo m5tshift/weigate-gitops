@@ -1,7 +1,7 @@
 # webhook-service on the full stand (SRS 6.2, 6.3); merged over charts/webhook-service/values.yaml of weigate.
 # Not synced yet: services/webhook-service/application.yaml moves to apps/services with m5tshift/weigate#183.
 image:
-  repository: ghcr.io/m5tshift/weigate/webhook-service
+  repository: zot.registry.svc:5000/weigate/webhook-service
   # Updated by CI of weigate after the image build; not edited by hand.
   tag: "587ef7a"
 
