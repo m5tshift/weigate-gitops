@@ -1,12 +1,12 @@
-# Wave 3: Garage S3 for PostgreSQL and MongoDB backups and Tempo traces (SRS INF-1.3, 4.1.6). Own manifests on the
-# official image: no maintained chart. Secrets come from OpenBao through ESO (garage/core, garage/keys), not from git.
+# Wave 2: Garage S3 for PostgreSQL and MongoDB backups and Tempo traces (SRS INF-1.3, 4.1.6).
+# Placed in wave 2 so Percona MongoDB PBM and CNPG backups (wave 2) do not deadlock waiting for wave 3.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: garage
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-wave: "2"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
