@@ -122,8 +122,8 @@ grep -q 'buildkit:.*-rootless@sha256:' "$out/arc-runners.yaml" || { echo "render
   || { echo "render: arc-runners: runner pod mounts a service account token"; fail=1; }
 [ "$(yq -N 'select(.kind == "Secret") | .kind' "$out/arc-controller.yaml" "$out/arc-runners.yaml" "$out/arc-config.yaml" | sed '/^$/d' | wc -l)" -eq 0 ] \
   || { echo "render: arc: Secret in the manifests"; fail=1; }
-got=$(yq -N 'select(.kind == "CiliumNetworkPolicy" and .metadata.name == "runners") | .spec.egress[].toFQDNs[]? | .matchName // .matchPattern' "$out/arc-config.yaml" | sed '/^$/d' | sort | tr '\n' ' ')
-want="*.actions.githubusercontent.com *.blob.core.windows.net api.github.com codeload.github.com get.helm.sh github.com objects.githubusercontent.com proxy.golang.org sum.golang.org "
+got=$(yq -N 'select(.kind == "CiliumNetworkPolicy" and .metadata.name == "runners") | .spec.egress[].toFQDNs[]? | .matchName // .matchPattern' "$out/arc-config.yaml" | sed '/^$/d' | sort -u | tr '\n' ' ')
+want="*.actions.githubusercontent.com *.blob.core.windows.net *.docker.com *.docker.io api.github.com codeload.github.com gcr.io get.helm.sh github.com objects.githubusercontent.com proxy.golang.org release-assets.githubusercontent.com storage.googleapis.com sum.golang.org "
 [ "$got" = "$want" ] || { echo "render: arc-config: runners toFQDNs '$got'"; fail=1; }
 [ "$(yq -N 'select(.kind == "ExternalSecret") | .spec.dataFrom[0].extract.key' "$out/arc-config.yaml" | sed '/^$/d')" = "ci/github" ] \
   || { echo "render: arc-config: ExternalSecret must read ci/github"; fail=1; }
