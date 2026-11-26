@@ -43,7 +43,7 @@ for f in "$dir"/*.json; do
     case "$m" in
       weigate_* | http_server_* | outbox_*)
         known "$m" || { echo "dashboards: $f: $m is not a metric of weigate"; fail=1; } ;;
-      kafka_* | envoy_* | istio_* | kube_* | kubelet_* | hubble_* | tempo_*) ;;
+      kafka_* | envoy_* | istio_* | kube_* | kubelet_* | node_* | container_* | hubble_* | tempo_*) ;;
       *) echo "dashboards: $f: $m has no known source"; fail=1 ;;
     esac
   done
