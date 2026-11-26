@@ -54,7 +54,8 @@ template:
         securityContext:
           runAsUser: 1000
           runAsGroup: 1000
-          allowPrivilegeEscalation: false
+          # newuidmap inside rootlesskit needs file capability cap_setuid (PR_SET_NO_NEW_PRIVS blocks it); still non-root, non-privileged.
+          allowPrivilegeEscalation: true
           seccompProfile:
             type: Unconfined
           appArmorProfile:

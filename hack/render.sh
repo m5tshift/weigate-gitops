@@ -115,7 +115,7 @@ got=$(yq -N 'select(.kind == "AutoscalingRunnerSet") | [.spec.minRunners, .spec.
 [ "$got" = "0 2" ] || { echo "render: arc-runners: want minRunners 0 and maxRunners 2: $got"; fail=1; }
 got=$(yq -N 'select(.kind == "AutoscalingRunnerSet") | .spec.template.spec.containers[].name' "$out/arc-runners.yaml" | sed '/^$/d' | tr '\n' ' ')
 [ "$got" = "runner buildkitd " ] || { echo "render: arc-runners: containers '$got'"; fail=1; }
-bad=$(yq -N 'select(.kind == "AutoscalingRunnerSet") | .spec.template.spec.containers[] | select(.securityContext.privileged == true or .securityContext.allowPrivilegeEscalation != false) | .name' "$out/arc-runners.yaml" | sed '/^$/d')
+bad=$(yq -N 'select(.kind == "AutoscalingRunnerSet") | .spec.template.spec.containers[] | select(.securityContext.privileged == true or (.name == "runner" and .securityContext.allowPrivilegeEscalation != false)) | .name' "$out/arc-runners.yaml" | sed '/^$/d')
 [ -z "$bad" ] || { echo "render: arc-runners: privileged or privilege escalation: $bad"; fail=1; }
 grep -q 'buildkit:.*-rootless@sha256:' "$out/arc-runners.yaml" || { echo "render: arc-runners: buildkitd is not a rootless image pinned by digest"; fail=1; }
 [ "$(yq -N 'select(.kind == "AutoscalingRunnerSet") | .spec.template.spec.automountServiceAccountToken' "$out/arc-runners.yaml" | sed '/^$/d')" = false ] \
