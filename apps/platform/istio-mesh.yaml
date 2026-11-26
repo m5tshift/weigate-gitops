@@ -1,13 +1,12 @@
-# Wave 3: Gateway API Gateway and HTTPRoutes, PROXY protocol, mesh-wide mTLS STRICT, JWT check on the gateway
-# (SRS 4.1.8, 4.1.10). Needs the Istio and Gateway API CRDs (wave 1), istiod (wave 2) and the Secret
-# weigate-gateway-tls from cert-manager-issuers (wave 2).
+# Wave 5: Gateway API Gateway and HTTPRoutes, PROXY protocol, mesh-wide mTLS STRICT, JWT check on the gateway
+# (SRS 4.1.8, 4.1.10). Placed in wave 5 (after wave 4 services) so HTTPRoute backendRefs resolve without deadlocking wave 4.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: istio-mesh
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-wave: "5"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
