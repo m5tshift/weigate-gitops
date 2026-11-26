@@ -116,3 +116,19 @@ spec:
     - port: tempo-prom-metrics
       path: /metrics
       interval: 30s
+---
+# CloudNativePG built-in Prometheus exporter (:9187/metrics on port "metrics") for merchant-pg, invoice-pg, ledger-pg.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: cnpg-clusters
+spec:
+  namespaceSelector:
+    matchNames: [data]
+  selector:
+    matchLabels:
+      cnpg.io/podRole: instance
+  podMetricsEndpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
