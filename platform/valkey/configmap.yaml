@@ -21,4 +21,5 @@ data:
     invoice-service ~invoice:status:* -@all +get +set +ping +hello +client|setinfo +client|setname
     chain-watcher ~chain-watcher:* -@all +sismember +sadd +srem +del +ping +hello +client|setinfo +client|setname
     rate-service ~rate:latest:* -@all +hset +hgetall +ping +hello +client|setinfo +client|setname
+    webhook-service ~webhook-service:dedup:* -@all +set +ping +hello +client|setinfo +client|setname
     envoy-rls ~envoy-rls:* -@all +incrby +expire +ping +hello +client|setinfo +client|setname
