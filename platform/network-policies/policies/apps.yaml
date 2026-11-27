@@ -87,7 +87,7 @@ spec:
             - port: "443"
               protocol: TCP
 ---
-# Public API behind the gateway (SRS 4.1.8): merchants, invoices, ledger statements, reports.
+# Public API behind the gateway (SRS 4.1.8): merchants, invoices, reports (ledger-service is internal-only).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -98,7 +98,7 @@ spec:
     matchExpressions:
       - key: app.kubernetes.io/name
         operator: In
-        values: [merchant-service, invoice-service, ledger-service, reporting-service]
+        values: [merchant-service, invoice-service, reporting-service]
   ingress:
     - fromEndpoints:
         - matchLabels:
