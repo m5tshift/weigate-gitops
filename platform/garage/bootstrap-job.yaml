@@ -29,8 +29,8 @@ spec:
               auth="Authorization: Bearer $(cat /secrets/admin-token)"
               call() { curl -sf -H "$auth" -H 'Content-Type: application/json' "$@"; }
               until call "$api/status" > /tmp/status; do sleep 3; done
-              node=$(sed -n 's/.*"id":"\([0-9a-f]*\)".*/\1/p' /tmp/status | head -n1)
-              if ! call "$api/layout" | grep -q '"roles":\[{'; then
+              node=$(tr -d ' \n\r\t' < /tmp/status | grep -oE '"node":"[0-9a-f]+"' | head -n1 | cut -d'"' -f4)
+              if ! call "$api/layout" | tr -d ' \n\r\t' | grep -q '"roles":\[{'; then
                 call -X POST "$api/layout" -d "[{\"id\":\"$node\",\"zone\":\"dc1\",\"capacity\":10000000000,\"tags\":[]}]" > /dev/null
                 call -X POST "$api/layout/apply" -d '{"version":1}' > /dev/null
               fi
@@ -38,7 +38,7 @@ spec:
                 if ! call "$api/bucket?globalAlias=$b" > /tmp/bucket; then
                   call -X POST "$api/bucket" -d "{\"globalAlias\":\"$b\"}" > /tmp/bucket
                 fi
-                bid=$(sed -n 's/^{"id":"\([0-9a-f]*\)".*/\1/p' /tmp/bucket)
+                bid=$(tr -d ' \n\r\t' < /tmp/bucket | grep -oE '"id":"[0-9a-f]+"' | head -n1 | cut -d'"' -f4)
                 ak=$(cat "/keys/$b-access-key")
                 if ! call "$api/key?id=$ak" > /dev/null; then
                   call -X POST "$api/key/import" -d "{\"name\":\"$b\",\"accessKeyId\":\"$ak\",\"secretAccessKey\":\"$(cat "/keys/$b-secret-key")\"}" > /dev/null
